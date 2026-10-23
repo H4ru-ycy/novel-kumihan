@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>小説原稿・組版メーカー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600&family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+/* Layout: 3-pane workbench (設定 | 原稿 | 組版プレビュー) that collapses into tabs on phones */
+:root{
+  --bg:#ECEEF2; --surface:#FFFFFF; --sunk:#F4F5F8; --fg:#1B2130; --muted:#5D6575; --line:#D4D9E1;
+  --accent:#2A4A8A; --accent-fg:#FFFFFF; --accent-soft:#E2E8F4;
+  --ok:#2F7A4E; --warn:#A06000; --danger:#B3261E;
+  --paper:#FFFFFF; --ink:#16181D; --grid:rgba(42,74,138,.24); --band:rgba(42,74,138,.05);
+  --over:#C62828; --over-bg:rgba(198,40,40,.13);
+  --page-shadow:0 1px 2px rgba(20,28,45,.12),0 6px 18px rgba(20,28,45,.10);
+  --f-display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho","Noto Serif JP","Noto Serif CJK JP",serif;
+  --f-ui:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Noto Sans JP","Noto Sans CJK JP",sans-serif;
+  --f-mincho:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho","Noto Serif JP","Noto Serif CJK JP",serif;
+  --f-gothic:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Noto Sans JP","Noto Sans CJK JP",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11141A; --surface:#191D25; --sunk:#14171E; --fg:#E5E8EE; --muted:#9AA3B3; --line:#2B323E;
+  --accent:#8EAEEB; --accent-fg:#0F1830; --accent-soft:#1F2A42;
+  --ok:#6CC28F; --warn:#E3A548; --danger:#F08A80;
+  --paper:#F3F2EE; --ink:#16181D; --grid:rgba(42,74,138,.26); --band:rgba(42,74,138,.05);
+  --over:#C62828; --over-bg:rgba(198,40,40,.15);
+  --page-shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.45);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#11141A; --surface:#191D25; --sunk:#14171E; --fg:#E5E8EE; --muted:#9AA3B3; --line:#2B323E;
+  --accent:#8EAEEB; --accent-fg:#0F1830; --accent-soft:#1F2A42;
+  --ok:#6CC28F; --warn:#E3A548; --danger:#F08A80;
+  --paper:#F3F2EE; --ink:#16181D; --grid:rgba(42,74,138,.26); --band:rgba(42,74,138,.05);
+  --over:#C62828; --over-bg:rgba(198,40,40,.15);
+  --page-shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.45);
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;line-height:1.6;display:flex;flex-direction:column;overflow:hidden}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+.app-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding-block:12px 10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{min-width:0}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.25rem;letter-spacing:.04em;line-height:1.3;text-wrap:balance}
+.spec{margin:2px 0 0;font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.head-count{font-variant-numeric:tabular-nums;font-size:.85rem;padding:4px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:700;white-space:nowrap}
+.head-count.is-over{background:var(--over-bg);color:var(--danger)}
+
+/* tabs */
+.tabs{display:flex;gap:4px;background:var(--surface);border-bottom:1px solid var(--line);
+  padding-block:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs button{flex:1;border:0;background:none;padding:10px 4px 9px;font-weight:700;font-size:.9rem;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer}
+.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+
+main.panes{flex:1;min-height:0;overflow:auto}
+.pane{padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));min-width:0}
+.pane:not(.is-active){display:none}
+
+@media (min-width:1100px){
+  .tabs{display:none}
+  main.panes{display:grid;grid-template-columns:300px minmax(0,1fr) minmax(0,1.15fr);overflow:hidden}
+  .pane,.pane:not(.is-active){display:block;overflow:auto;padding-left:20px;padding-right:20px}
+  #pane-setup{background:var(--surface);border-right:1px solid var(--line);padding-left:max(20px,env(safe-area-inset-left,0px))}
+  #pane-write{border-right:1px solid var(--line);display:flex;flex-direction:column}
+  #pane-preview{padding-right:max(20px,env(safe-area-inset-right,0px))}
+}
+
+/* setup form */
+.group{border:0;margin:0 0 20px;padding:0;min-width:0}
+.group > legend,.label{font-size:.75rem;font-weight:700;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;padding:0}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg label{position:relative;flex:1 1 auto;min-width:0}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg span{display:block;text-align:center;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--sunk);font-weight:500;font-size:.9rem;white-space:nowrap}
+.seg span small{display:block;font-size:.68rem;color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums}
+.seg input:checked + span{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.seg input:checked + span small{color:inherit;opacity:.8}
+.seg input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.grid-nm{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.num{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;background:var(--sunk);overflow:hidden}
+.num input{width:4.2em;border:0;background:transparent;padding:8px 4px;text-align:center;font-size:1.15rem;font-weight:700;font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.num input::-webkit-inner-spin-button{-webkit-appearance:none}
+.num button{border:0;background:none;width:34px;align-self:stretch;font-size:1.1rem;color:var(--muted);cursor:pointer}
+.num button:active{background:var(--accent-soft)}
+.unit{font-weight:700;color:var(--muted)}
+.hint{font-size:.78rem;color:var(--muted);margin:6px 0 0}
+.range-row{display:flex;align-items:center;gap:10px}
+.range-row input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}
+.range-row output{font-variant-numeric:tabular-nums;font-weight:700;min-width:4.2em;text-align:right}
+.checks{display:grid;gap:8px}
+.checks label{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;cursor:pointer}
+.checks input{accent-color:var(--accent);margin-top:4px;flex:none}
+.checks label.is-off{opacity:.45}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:.82rem;cursor:pointer;font-weight:500}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip small{color:var(--muted);font-variant-numeric:tabular-nums;margin-left:4px}
+.select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--sunk)}
+.readout{background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:4px;font-size:.88rem}
+.readout div{display:flex;justify-content:space-between;gap:8px}
+.readout dt{color:var(--muted)}
+.readout dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums}
+.alert{margin:8px 0 0;font-size:.8rem;color:var(--warn);font-weight:500}
+.alert:empty{display:none}
+
+/* write pane */
+.meter{position:sticky;top:-16px;z-index:2;background:var(--bg);padding-block:4px 10px;margin-top:-4px}
+@media (min-width:1100px){.meter{top:-16px}}
+.meter-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.count{font-variant-numeric:tabular-nums}
+.count b{font-family:var(--f-display);font-size:2rem;font-weight:800;letter-spacing:.02em}
+.count .of{color:var(--muted);font-weight:500}
+.state{font-size:.85rem;font-weight:700;color:var(--ok);font-variant-numeric:tabular-nums}
+.state.near{color:var(--warn)} .state.over{color:var(--danger)}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:6px 0 8px}
+.bar i{display:block;height:100%;width:0;background:var(--ok);border-radius:3px;transition:width .2s}
+.bar.near i{background:var(--warn)} .bar.over i{background:var(--danger)}
+.bar[hidden]{display:none}
+.stats{display:flex;gap:18px;margin:0;flex-wrap:wrap;font-size:.8rem}
+.stats div{display:flex;gap:6px;align-items:baseline}
+.stats dt{color:var(--muted)} .stats dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 8px}
+.tool{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;font-size:.85rem;cursor:pointer;min-width:44px}
+.tool:active{background:var(--accent-soft)}
+.tool kbd{font-family:var(--f-mincho);font-size:.95rem}
+.editor-wrap{position:relative;flex:1;display:flex;flex-direction:column;min-height:0}
+#manuscript{width:100%;flex:1;min-height:56vh;resize:vertical;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px 16px;line-height:1.9;font-size:16px;font-family:var(--f-mincho)}
+#manuscript.gothic{font-family:var(--f-gothic)}
+#manuscript.is-over{border-color:var(--danger)}
+.sample-tag{position:absolute;top:8px;right:10px;font-size:.7rem;background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:999px;font-weight:700;pointer-events:none}
+.notation{font-size:.78rem;color:var(--muted);margin:8px 0 0}
+.notation code{font-family:var(--f-mincho);background:var(--sunk);border:1px solid var(--line);border-radius:4px;padding:0 4px;color:var(--fg)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:700;font-size:.88rem;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.danger{color:var(--danger)}
+.btn.danger.arm{background:var(--danger);color:var(--surface);border-color:var(--danger)}
+.btn input[type=file]{display:none}
+
+/* preview */
+.pv-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.pv-head p{margin:0;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.pv-head .range-row{width:180px}
+.pages{display:flex;flex-wrap:wrap;gap:22px 18px;justify-content:center}
+.pg{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:100%}
+.folio{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.page{position:relative;background:var(--paper);color:var(--ink);box-shadow:var(--page-shadow);flex:none;overflow:hidden;font-family:var(--f-mincho)}
+.page.gothic{font-family:var(--f-gothic)}
+.ln{position:absolute;white-space:pre;font-size:var(--cs);line-height:var(--p);font-kerning:none;text-spacing-trim:space-all;text-autospace:no-autospace;font-feature-settings:"palt" 0}
+.v .ln{writing-mode:vertical-rl;width:var(--p);height:var(--L);text-orientation:mixed}
+.h .ln{width:var(--L);height:var(--p)}
+.page.grid .ln{background-repeat:no-repeat}
+.page.grid.v .ln{background-image:repeating-linear-gradient(180deg,var(--grid) 0 1px,transparent 1px var(--cs)),linear-gradient(var(--band),var(--band));background-size:var(--cs) var(--L);background-position:center top}
+.page.grid.h .ln{background-image:repeating-linear-gradient(90deg,var(--grid) 0 1px,transparent 1px var(--cs)),linear-gradient(var(--band),var(--band));background-size:var(--L) var(--cs);background-position:left center}
+.ln ruby rt{font-size:.5em;line-height:1}
+.ln .em{text-emphasis:filled sesame;-webkit-text-emphasis:filled sesame}
+.ln .tcy{text-combine-upright:all;-webkit-text-combine:horizontal}
+.ln .x{color:var(--over);background:var(--over-bg)}
+.empty-note{text-align:center;color:var(--muted);font-size:.85rem;margin-top:10px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:.88rem;font-weight:500;z-index:20;max-width:calc(100% - 32px);opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+#printArea{display:none}
+@media print{
+  :root{padding:0!important}
+  html,body{height:auto!important;overflow:visible!important;background:#fff!important;display:block!important}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block}
+  #printArea .page{box-shadow:none;background:#fff;color:#000;break-after:page;page-break-after:always}
+  #printArea .page:last-child{break-after:auto;page-break-after:auto}
+  #printArea .ln .x{color:inherit;background:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style id="pageRule"></style>
+</head>
+<body>
+
+<header class="app-head">
+  <div class="brand">
+    <h1>小説原稿・組版メーカー</h1>
+    <p class="spec" id="specLine">—</p>
+  </div>
+  <span class="head-count" id="headCount">0字</span>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="画面切り替え">
+  <button role="tab" id="tab-write" data-pane="write" aria-selected="true">原稿</button>
+  <button role="tab" id="tab-setup" data-pane="setup" aria-selected="false">組版設定</button>
+  <button role="tab" id="tab-preview" data-pane="preview" aria-selected="false">プレビュー</button>
+</nav>
+
+<main class="panes" id="panes">
+  <!-- 設定 -->
+  <section class="pane" id="pane-setup" aria-labelledby="tab-setup">
+    <form id="setup" autocomplete="off" onsubmit="return false">
+      <div class="group">
+        <div class="label">プリセット</div>
+        <div class="presets">
+          <button type="button" class="chip" data-preset="bunko">文庫<small>38×16</small></button>
+          <button type="button" class="chip" data-preset="b6">B6一段<small>40×17</small></button>
+          <button type="button" class="chip" data-preset="a5one">A5一段<small>42×17</small></button>
+          <button type="button" class="chip" data-preset="a5two">A5二段<small>25×21×2</small></button>
+          <button type="button" class="chip" data-preset="contest">新人賞応募<small>A4横 40×30</small></button>
+        </div>
+      </div>
+
+      <fieldset class="group">
+        <legend>書字方向</legend>
+        <div class="seg">
+          <label><input type="radio" name="dir" id="dir-v" value="v"><span>縦書き</span></label>
+          <label><input type="radio" name="dir" id="dir-h" value="h"><span>横書き</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>段組</legend>
+        <div class="seg">
+          <label><input type="radio" name="cols" id="cols-1" value="1"><span>一段組み</span></label>
+          <label><input type="radio" name="cols" id="cols-2" value="2"><span>二段組み</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>原稿サイズ</legend>
+        <div class="seg">
+          <label><input type="radio" name="size" id="size-A4" value="A4"><span>A4<small>210×297</small></span></label>
+          <label><input type="radio" name="size" id="size-B5" value="B5"><span>B5<small>182×257</small></span></label>
+          <label><input type="radio" name="size" id="size-A5" value="A5"><span>A5<small>148×210</small></span></label>
+          <label><input type="radio" name="size" id="size-B6" value="B6"><span>B6<small>128×182</small></span></label>
+          <label><input type="radio" name="size" id="size-A6" value="A6"><span>A6文庫<small>105×148</small></span></label>
+        </div>
+        <div class="seg" style="margin-top:6px">
+          <label><input type="radio" name="orient" id="orient-p" value="p"><span>縦長</span></label>
+          <label><input type="radio" name="orient" id="orient-l" value="l"><span>横長</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend id="nmLegend">字数 × 行数</legend>
+        <div class="grid-nm">
+          <div class="num"><button type="button" data-step="chars" data-d="-1" aria-label="字数を減らす">−</button><input type="number" id="chars" inputmode="numeric" min="5" max="80" aria-label="1行の字数"><button type="button" data-step="chars" data-d="1" aria-label="字数を増やす">＋</button></div>
+          <span class="unit">字 ×</span>
+          <div class="num"><button type="button" data-step="lines" data-d="-1" aria-label="行数を減らす">−</button><input type="number" id="lines" inputmode="numeric" min="3" max="60" aria-label="1ページの行数"><button type="button" data-step="lines" data-d="1" aria-label="行数を増やす">＋</button></div>
+          <span class="unit">行</span>
+        </div>
+        <p class="hint" id="nmHint">1ページ 0字</p>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>余白（天地左右）</legend>
+        <div class="range-row"><input type="range" id="margin" min="5" max="40" step="1"><output id="marginOut">0 mm</output></div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>書体</legend>
+        <div class="seg">
+          <label><input type="radio" name="font" id="font-m" value="mincho"><span style="font-family:var(--f-mincho)">明朝</span></label>
+          <label><input type="radio" name="font" id="font-g" value="gothic"><span style="font-family:var(--f-gothic)">ゴシック</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>組版オプション</legend>
+        <div class="checks">
+          <label id="lab-tcy"><input type="checkbox" id="opt-tcy">2桁の数字・!? を縦中横にする（縦書き）</label>
+          <label id="lab-fw"><input type="checkbox" id="opt-fw">半角英数を全角で組む（縦書き）</label>
+          <label><input type="checkbox" id="opt-indent">段落の頭を自動で1字下げる</label>
+          <label><input type="checkbox" id="opt-grid">マス目ガイドを表示</label>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>文字数制限</legend>
+        <div class="grid-nm">
+          <div class="num"><input type="number" id="limit" inputmode="numeric" min="0" step="100" style="width:6.5em" aria-label="上限の文字数"></div>
+          <span class="unit">字まで</span>
+        </div>
+        <p class="hint">0 にすると制限なし</p>
+        <div style="margin-top:10px">
+          <label class="label" for="countMode" style="display:block">数え方</label>
+          <select class="select" id="countMode">
+            <option value="nows">空白・改行を数えない</option>
+            <option value="nonl">改行だけ数えない</option>
+            <option value="all">空白・改行も数える</option>
+          </select>
+        </div>
+        <div class="checks" style="margin-top:10px">
+          <label><input type="checkbox" id="opt-hard">上限に達したら入力を止める</label>
+        </div>
+      </fieldset>
+
+      <div class="group">
+        <div class="label">組版の目安</div>
+        <dl class="readout" id="readout">
+          <div><dt>文字サイズ</dt><dd id="rCs">—</dd></div>
+          <div><dt>行送り</dt><dd id="rP">—</dd></div>
+          <div><dt>版面</dt><dd id="rArea">—</dd></div>
+          <div><dt>1ページの最大字数</dt><dd id="rCap">—</dd></div>
+        </dl>
+        <p class="alert" id="rAlert"></p>
+      </div>
+    </form>
+  </section>
+
+  <!-- 原稿 -->
+  <section class="pane is-active" id="pane-write" aria-labelledby="tab-write">
+    <div class="meter">
+      <div class="meter-top">
+        <span class="count"><b id="cNow">0</b><span class="of" id="cOf"> 字</span></span>
+        <span class="state" id="cState"></span>
+      </div>
+      <div class="bar" id="cBar"><i></i></div>
+      <dl class="stats">
+        <div><dt>ページ</dt><dd id="sPages">—</dd></div>
+        <div><dt>行</dt><dd id="sLines">—</dd></div>
+        <div><dt>400字詰め換算</dt><dd id="sGenko">—</dd></div>
+      </dl>
+    </div>
+
+    <div class="toolbar" aria-label="入力補助">
+      <button type="button" class="tool" data-ins="ruby">ルビ</button>
+      <button type="button" class="tool" data-ins="em">傍点</button>
+      <button type="button" class="tool" data-ins="kagi"><kbd>「」</kbd></button>
+      <button type="button" class="tool" data-ins="nijukagi"><kbd>『』</kbd></button>
+      <button type="button" class="tool" data-ins="leader"><kbd>……</kbd></button>
+      <button type="button" class="tool" data-ins="dash"><kbd>――</kbd></button>
+      <button type="button" class="tool" data-ins="space">全角空白</button>
+    </div>
+
+    <div class="editor-wrap">
+      <textarea id="manuscript" spellcheck="false" aria-label="本文" placeholder="ここに本文を書きます"></textarea>
+      <span class="sample-tag" id="sampleTag">サンプル原稿</span>
+    </div>
+    <p class="notation">ルビは <code>｜漢字《かんじ》</code>、傍点は <code>《《強調》》</code>。漢字だけの語なら <code>漢字《かんじ》</code> でもルビになります。</p>
+
+    <div class="actions">
+      <button type="button" class="btn primary" id="btnCopy">本文をコピー</button>
+      <label class="btn" for="fileIn">.txt を開く<input type="file" id="fileIn" accept=".txt,text/plain"></label>
+      <button type="button" class="btn danger" id="btnClear">本文を消去</button>
+    </div>
+  </section>
+
+  <!-- プレビュー -->
+  <section class="pane" id="pane-preview" aria-labelledby="tab-preview">
+    <div class="pv-head">
+      <p id="pvSummary">—</p>
+      <button type="button" class="btn primary" id="btnPrint">印刷・PDF保存</button>
+      <div class="range-row"><input type="range" id="zoom" min="40" max="100" step="5" aria-label="表示倍率"><output id="zoomOut">100%</output></div>
+    </div>
+    <div class="pages" id="pages"></div>
+  </section>
+</main>
+
+<div id="printArea" aria-hidden="true"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const KEY_T='shosetsu-kumihan:text', KEY_S='shosetsu-kumihan:settings';
+const SIZES={A4:[210,297],B5:[182,257],A5:[148,210],B6:[128,182],A6:[105,148]};
+const SIZE_LABEL={A4:'A4',B5:'B5',A5:'A5',B6:'B6',A6:'A6文庫'};
+const DEF_MARGIN={A4:20,B5:18,A5:15,B6:13,A6:11};
+const PRESETS={
+  bunko:{label:'文庫',size:'A6',orient:'p',dir:'v',cols:1,chars:38,lines:16,margin:11},
+  b6:{label:'B6一段',size:'B6',orient:'p',dir:'v',cols:1,chars:40,lines:17,margin:13},
+  a5one:{label:'A5一段',size:'A5',orient:'p',dir:'v',cols:1,chars:42,lines:17,margin:15},
+  a5two:{label:'A5二段',size:'A5',orient:'p',dir:'v',cols:2,chars:25,lines:21,margin:14},
+  contest:{label:'新人賞応募（A4横・縦書き40字×30行）',size:'A4',orient:'l',dir:'v',cols:1,chars:40,lines:30,margin:20}
+};
+const DEFAULTS={dir:'v',cols:1,size:'A6',orient:'p',chars:38,lines:16,margin:11,font:'mincho',tcy:true,fw:true,indent:false,grid:false,limit:10000,countMode:'nows',hard:false,zoom:100};
+
+const SAMPLE=`　第一章　｜灯《ともしび》の町
+
+　駅前の時計台が12時を打つころ、私はようやく最後の一行を書き終えた。
+　窓の外では、雨がまだ細く降り続いている。原稿用紙の端は湿気で少し波打っていて、インクの匂いが部屋の隅まで満ちていた。
+「まだ起きてたの!?」
+　襖《ふすま》の向こうから、姉の声がした。
+「うん。締切、明日だから」
+「明日って、もう今日でしょう」
+　言われてみればそうだ。私は苦笑して、万年筆のキャップを閉めた。
+　机の上には、書き損じの紙が山になっている。そのどれもが、たったひとつの場面を書こうとして失敗した跡だった。主人公が《《初めて》》町を出ていく、その朝のこと。
+　何度書いても、彼女は駅の改札の前で立ち止まってしまう。足が動かないのだ。書いている私の手と同じように。
+「ねえ、読ませてよ」
+「だめ。製本してからね」
+　姉は「けち」と小さく笑って、廊下の灯りを消した。
+　暗くなった部屋で、私はもう一度だけ最初の頁《ページ》をめくった。そこには、3年前の私が書いた題名がある。――灯の町。
+　あの頃は、この町を出ていく話を書くつもりだった。けれど今は、帰ってくる話になりかけている。
+　それが良いことなのか、悪いことなのか、まだ私にはわからない。……ただ、彼女を改札の向こうへ行かせなくてもいいのかもしれない、と思った。`;
+
+/* ---------- storage ---------- */
+function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function save(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+
+let state=Object.assign({},DEFAULTS);
+try{const s=JSON.parse(load(KEY_S)||'null'); if(s) Object.assign(state,s);}catch(e){}
+const ta=$('manuscript');
+const savedText=load(KEY_T);
+let isSample = savedText===null;
+ta.value = savedText===null ? SAMPLE : savedText;
+let lastGood = ta.value;
+
+/* ---------- counting ---------- */
+const KANJI='一-龠々〆ヵヶ㐀-鿿豈-﫿';
+function stripMarkup(s){
+  return s.replace(/《《([^》\n]*)》》/g,'$1')
+          .replace(/[|｜]([^|｜《\n]+?)《[^》\n]*》/g,'$1')
+          .replace(new RegExp('(['+KANJI+']+)《[^》\\n]*》','g'),'$1');
+}
+function countText(text,mode){
+  let s=stripMarkup(text);
+  if(mode==='nows') s=s.replace(/[\s　]/g,'');
+  else if(mode==='nonl') s=s.replace(/\r?\n/g,'');
+  else s=s.replace(/\r\n/g,'\n');
+  return [...s].length;
+}
+
+/* ---------- tokenizing ---------- */
+const RE=new RegExp('《《([^》\\n]+)》》|[|｜]([^|｜《\\n]+?)《([^》\\n]+)》|(['+KANJI+']+)《([^》\\n]+)》','g');
+const NOSTART=new Set([...'、。，．,.)）」』】〕〉》］｝!?！？']);
+const NOEND=new Set([...'（「『【〔〈《［｛(']);
+const isWS=c=>/[\s　]/.test(c);
+function toFull(c){
+  const code=c.charCodeAt(0);
+  if(code===0x20) return '　';
+  if(code>0x20&&code<0x7F) return String.fromCharCode(code+0xFEE0);
+  return c;
+}
+/* returns {paras:[units[]], total} ; unit={k,t,len,rt,x} */
+function buildUnits(text,o){
+  const paras=[]; let run=0;
+  const lim=o.limit>0?o.limit:Infinity;
+  const weight=c=>(o.mode==='nows'&&isWS(c))?0:1;
+  const lines=text.replace(/\r\n/g,'\n').split('\n');
+  lines.forEach((line,li)=>{
+    const us=[];
+    if(o.indent && line.length && !/^[　 「『（(【〈《―…]/.test(line)) us.push({k:'c',t:'　',len:1});
+    const pushPlain=s=>{
+      const cs=[...s];
+      for(let i=0;i<cs.length;i++){
+        const c=cs[i], prev=cs[i-1]||'';
+        if(o.v&&o.tcy){
+          if(/[0-9]/.test(c)&&/[0-9]/.test(cs[i+1]||'')&&!/[0-9]/.test(cs[i+2]||'')&&!/[0-9]/.test(prev)){
+            run+=2; us.push({k:'y',t:c+cs[i+1],len:1,x:run>lim}); i++; continue;
+          }
+          if(/[!?！？]/.test(c)&&/[!?！？]/.test(cs[i+1]||'')&&!/[!?！？]/.test(cs[i+2]||'')){
+            const h=(c+cs[i+1]).replace(/！/g,'!').replace(/？/g,'?');
+            run+=2; us.push({k:'y',t:h,len:1,x:run>lim}); i++; continue;
+          }
+        }
+        run+=weight(c);
+        us.push({k:'c',t:(o.v&&o.fw)?toFull(c):c,len:1,x:run>lim&&weight(c)>0});
+      }
+    };
+    let last=0,m; RE.lastIndex=0;
+    while((m=RE.exec(line))){
+      if(m.index>last) pushPlain(line.slice(last,m.index));
+      if(m[1]!==undefined){
+        for(const c of m[1]){run+=weight(c); us.push({k:'e',t:(o.v&&o.fw)?toFull(c):c,len:1,x:run>lim});}
+      }else{
+        const base=m[2]!==undefined?m[2]:m[4], rt=m[2]!==undefined?m[3]:m[5];
+        const n=[...base].length; run+=n;
+        us.push({k:'r',t:base,rt,len:n,x:run>lim});
+      }
+      last=RE.lastIndex;
+    }
+    if(last<line.length) pushPlain(line.slice(last));
+    paras.push(us);
+    if(o.mode==='all'&&li<lines.length-1) run++;
+  });
+  return {paras,total:run};
+}
+function breakPara(units,N){
+  if(!units.length) return [[]];
+  const out=[]; let i=0;
+  while(i<units.length){
+    const line=[]; let len=0;
+    while(i<units.length&&len+units[i].len<=N){line.push(units[i]);len+=units[i].len;i++;}
+    if(!line.length){line.push(units[i]);i++;}
+    let h=0;
+    while(i<units.length&&h<2&&units[i].k!=='r'&&NOSTART.has(units[i].t)){line.push(units[i]);i++;h++;}
+    if(h===0&&i<units.length){
+      while(line.length>1){const u=line[line.length-1]; if(u.k!=='r'&&NOEND.has(u.t)){line.pop();i--;}else break;}
+    }
+    out.push(line);
+  }
+  return out;
+}
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function unitHTML(u){
+  let h;
+  if(u.k==='r') h='<ruby>'+esc(u.t)+'<rt>'+esc(u.rt)+'</rt></ruby>';
+  else if(u.k==='y') h='<span class="tcy">'+esc(u.t)+'</span>';
+  else if(u.k==='e') h='<span class="em">'+esc(u.t)+'</span>';
+  else h=esc(u.t);
+  return u.x?'<span class="x">'+h+'</span>':h;
+}
+
+/* ---------- geometry ---------- */
+function geom(){
+  const [w0,h0]=SIZES[state.size];
+  const W=state.orient==='l'?h0:w0, H=state.orient==='l'?w0:h0;
+  const m=Math.min(state.margin,Math.floor(Math.min(W,H)/2)-10);
+  const cW=W-2*m, cH=H-2*m, v=state.dir==='v';
+  const L=v?cH:cW, C=v?cW:cH, N=state.chars, M=state.lines, k=state.cols;
+  let cs=L/(k*N+(k-1)*2); const p=C/M; let squeezed=false;
+  if(p<cs*1.25){cs=p/1.25;squeezed=true;}
+  return {W,H,m,cW,cH,v,L,C,N,M,k,cs,p,squeezed};
+}
+const pt=mm=>(mm/0.3527778);
+
+/* ---------- form sync ---------- */
+const form=$('setup');
+function writeForm(){
+  ['dir','cols','size','orient','font'].forEach(n=>{const el=form.querySelector(`input[name="${n}"][value="${state[n]}"]`); if(el) el.checked=true;});
+  $('chars').value=state.chars; $('lines').value=state.lines; $('margin').value=state.margin;
+  $('opt-tcy').checked=state.tcy; $('opt-fw').checked=state.fw; $('opt-indent').checked=state.indent; $('opt-grid').checked=state.grid;
+  $('limit').value=state.limit; $('countMode').value=state.countMode; $('opt-hard').checked=state.hard; $('zoom').value=state.zoom;
+}
+const clamp=(v,a,b,d)=>{v=parseInt(v,10); if(isNaN(v)) return d; return Math.max(a,Math.min(b,v));};
+function readForm(){
+  const r=n=>(form.querySelector(`input[name="${n}"]:checked`)||{}).value;
+  state.dir=r('dir')||'v'; state.cols=parseInt(r('cols')||'1',10); state.size=r('size')||'A6'; state.orient=r('orient')||'p'; state.font=r('font')||'mincho';
+  state.chars=clamp($('chars').value,5,80,state.chars); state.lines=clamp($('lines').value,3,60,state.lines);
+  state.margin=clamp($('margin').value,5,40,state.margin);
+  state.tcy=$('opt-tcy').checked; state.fw=$('opt-fw').checked; state.indent=$('opt-indent').checked; state.grid=$('opt-grid').checked;
+  state.limit=clamp($('limit').value,0,9999999,0); state.countMode=$('countMode').value; state.hard=$('opt-hard').checked;
+}
+function persist(){save(KEY_S,JSON.stringify(state));}
+
+/* ---------- meter ---------- */
+const fmt=n=>n.toLocaleString('ja-JP');
+function updateMeter(){
+  const n=countText(ta.value,state.countMode), lim=state.limit;
+  $('cNow').textContent=fmt(n);
+  const bar=$('cBar'), st=$('cState'), hc=$('headCount');
+  bar.classList.remove('near','over'); st.classList.remove('near','over'); hc.classList.remove('is-over'); ta.classList.remove('is-over');
+  if(lim>0){
+    $('cOf').textContent=' / '+fmt(lim)+' 字';
+    bar.hidden=false; bar.firstElementChild.style.width=Math.min(100,n/lim*100)+'%';
+    if(n>lim){st.textContent=fmt(n-lim)+' 字オーバー';st.classList.add('over');bar.classList.add('over');hc.classList.add('is-over');ta.classList.add('is-over');}
+    else{st.textContent='残り '+fmt(lim-n)+' 字'; if(n>=lim*0.9){st.classList.add('near');bar.classList.add('near');}}
+    hc.textContent=fmt(n)+' / '+fmt(lim)+'字';
+  }else{
+    $('cOf').textContent=' 字'; bar.hidden=true; st.textContent='制限なし'; hc.textContent=fmt(n)+'字';
+  }
+  const g=buildUnits(ta.value,{v:false,tcy:false,fw:false,indent:false,mode:state.countMode,limit:0});
+  let gl=0; g.paras.forEach(p=>gl+=breakPara(p,20).length);
+  $('sGenko').textContent=(ta.value.trim()?Math.ceil(gl/20):0)+' 枚';
+}
+
+/* ---------- render ---------- */
+let lastWidth=0;
+function render(){
+  const g=geom();
+  const dirL=g.v?'縦書き':'横書き', colL=g.k===2?'二段組み':'一段組み';
+  const sizeL=SIZE_LABEL[state.size]+(state.orient==='l'?'横長':'');
+  $('specLine').textContent=`${sizeL} · ${dirL} · ${colL} · ${g.N}字×${g.M}行${g.k===2?'×2段':''}`;
+  $('nmLegend').textContent=g.k===2?'字数 × 行数（1段あたり）':'字数 × 行数';
+  $('nmHint').textContent=`1ページ 最大 ${fmt(g.N*g.M*g.k)}字`;
+  $('marginOut').textContent=g.m+' mm';
+  $('rCs').textContent=pt(g.cs).toFixed(1)+' pt（'+g.cs.toFixed(2)+' mm）';
+  $('rP').textContent=pt(g.p).toFixed(1)+' pt';
+  $('rArea').textContent=g.cW.toFixed(0)+' × '+g.cH.toFixed(0)+' mm';
+  $('rCap').textContent=fmt(g.N*g.M*g.k)+' 字';
+  const al=[];
+  if(g.squeezed) al.push('行数に対して行間が足りないので、文字を小さくして収めています。行数を減らすか字数を増やすと読みやすくなります。');
+  if(pt(g.cs)<7) al.push('文字サイズが7pt未満です。印刷すると読みにくくなります。');
+  if(pt(g.cs)>14) al.push('文字サイズが14ptを超えています。字数か行数を増やすと本らしい密度になります。');
+  $('rAlert').textContent=al.join(' ');
+  ['lab-tcy','lab-fw'].forEach(id=>{$(id).classList.toggle('is-off',!g.v);$(id).querySelector('input').disabled=!g.v;});
+  ta.classList.toggle('gothic',state.font==='gothic');
+  $('zoomOut').textContent=state.zoom+'%';
+
+  const {paras}=buildUnits(ta.value,{v:g.v,tcy:state.tcy,fw:state.fw,indent:state.indent,mode:state.countMode,limit:state.limit});
+  const all=[]; paras.forEach(p=>breakPara(p,g.N).forEach(l=>all.push(l)));
+  while(all.length>1&&all[all.length-1].length===0) all.pop();
+  const per=g.M*g.k, nPages=Math.max(1,Math.ceil(all.length/per));
+  $('sPages').textContent=fmt(ta.value.trim()?nPages:0);
+  $('sLines').textContent=fmt(ta.value.trim()?all.length:0);
+  $('pvSummary').textContent=`全 ${fmt(nPages)} ページ · ${fmt(all.length)} 行`;
+
+  const pane=$('pane-preview');
+  let avail=pane.clientWidth-40; if(avail<200) avail=(lastWidth||Math.min(window.innerWidth,520))-40;
+  else lastWidth=pane.clientWidth;
+  const baseW=Math.min(avail,g.W>g.H?640:460)*state.zoom/100;
+  $('pages').innerHTML=pagesHTML(g,all,nPages,baseW/g.W,'px',true);
+  lastLayout={g,all,nPages};
+}
+let lastLayout=null;
+function pagesHTML(g,all,nPages,s,u,screen){
+  const f=v=>(v*s).toFixed(3)+u;
+  const per=g.M*g.k, colLen=g.N*g.cs, gap=2*g.cs, grid=screen&&state.grid;
+  const cls='page '+(g.v?'v':'h')+(state.font==='gothic'?' gothic':'')+(grid?' grid':'');
+  const H=screen?g.H:g.H-0.3;
+  const style=`width:${f(g.W)};height:${f(H)};--cs:${f(g.cs)};--p:${f(g.p)};--L:${f(colLen)}`;
+  const out=[];
+  for(let pg=0;pg<nPages;pg++){
+    out.push(screen?`<div class="pg"><div class="${cls}" style="${style}">`:`<div class="${cls}" style="${style}">`);
+    for(let j=0;j<g.k;j++){
+      for(let i=0;i<g.M;i++){
+        const line=all[pg*per+j*g.M+i];
+        if(line===undefined&&!grid) continue;
+        let x,y;
+        if(g.v){x=g.m+g.cW-(i+1)*g.p; y=g.m+j*(colLen+gap);}
+        else{x=g.m+j*(colLen+gap); y=g.m+i*g.p;}
+        out.push(`<div class="ln" style="left:${f(x)};top:${f(y)}">${line?line.map(unitHTML).join(''):''}</div>`);
+      }
+    }
+    out.push(screen?`</div><div class="folio">${pg+1} / ${nPages}</div></div>`:`</div>`);
+  }
+  return out.join('');
+}
+function renderPrint(){
+  render();
+  const {g,all,nPages}=lastLayout;
+  $('pageRule').textContent=`@page{size:${g.W}mm ${g.H}mm;margin:0}`;
+  $('printArea').innerHTML=pagesHTML(g,all,nPages,1,'mm',false);
+}
+window.addEventListener('beforeprint',renderPrint);
+
+/* ---------- events ---------- */
+let rT=null; const scheduleRender=()=>{clearTimeout(rT);rT=setTimeout(render,220);};
+function onText(){
+  if(isSample){isSample=false;$('sampleTag').hidden=true;}
+  save(KEY_T,ta.value); updateMeter(); scheduleRender();
+}
+function guardLimit(){
+  if(state.hard&&state.limit>0&&countText(ta.value,state.countMode)>state.limit&&countText(ta.value,state.countMode)>countText(lastGood,state.countMode)){
+    const pos=Math.max(0,ta.selectionStart-(ta.value.length-lastGood.length));
+    ta.value=lastGood; ta.setSelectionRange(pos,pos);
+    toast(`上限の ${fmt(state.limit)} 字に達しています`);
+    return false;
+  }
+  lastGood=ta.value; return true;
+}
+ta.addEventListener('input',e=>{ if(e.isComposing) {updateMeter(); return;} guardLimit(); onText(); });
+ta.addEventListener('compositionend',()=>{ guardLimit(); onText(); });
+
+form.addEventListener('input',e=>{
+  if(e.target.name==='size'){ state.size=e.target.value; $('margin').value=DEF_MARGIN[state.size]; }
+  if(e.target.id==='chars'||e.target.id==='lines'||e.target.id==='limit'){ if(e.target.value==='') return; }
+  readForm(); persist(); updateMeter(); render();
+});
+form.addEventListener('change',e=>{ if(['chars','lines','limit'].includes(e.target.id)){ readForm(); writeForm(); persist(); updateMeter(); render(); }});
+form.addEventListener('click',e=>{
+  const b=e.target.closest('[data-step]');
+  if(b){ const el=$(b.dataset.step); el.value=(parseInt(el.value,10)||0)+parseInt(b.dataset.d,10); readForm(); writeForm(); persist(); render(); return; }
+  const pr=e.target.closest('[data-preset]');
+  if(pr){ const P=PRESETS[pr.dataset.preset]; Object.keys(P).forEach(k=>{if(k!=='label') state[k]=P[k];}); writeForm(); persist(); render(); toast(P.label+' の設定にしました'); }
+});
+$('btnPrint').addEventListener('click',()=>{renderPrint();setTimeout(()=>window.print(),50);});
+$('zoom').addEventListener('input',e=>{state.zoom=parseInt(e.target.value,10);persist();render();});
+
+/* tabs */
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('is-active',p.id==='pane-'+b.dataset.pane));
+  $('panes').scrollTop=0;
+  if(b.dataset.pane==='preview') render();
+}));
+
+/* toolbar */
+const INS={ruby:['｜','《','》'],em:['《《','','》》'],kagi:['「','','」'],nijukagi:['『','','』'],leader:['……'],dash:['――'],space:['　']};
+document.querySelector('.toolbar').addEventListener('click',e=>{
+  const b=e.target.closest('[data-ins]'); if(!b) return;
+  const d=INS[b.dataset.ins], s=ta.selectionStart, en=ta.selectionEnd, sel=ta.value.slice(s,en);
+  let text, caret;
+  if(d.length===1){ text=d[0]; caret=s+text.length; }
+  else if(b.dataset.ins==='ruby'){ text=d[0]+sel+d[1]+d[2]; caret=sel? s+d[0].length+sel.length+d[1].length : s+d[0].length; }
+  else { text=d[0]+sel+d[1]+d[2]; caret=sel? s+text.length : s+d[0].length; }
+  ta.focus(); ta.setRangeText(text,s,en,'end'); ta.setSelectionRange(caret,caret);
+  if(guardLimit()) onText();
+});
+
+/* actions */
+$('btnCopy').addEventListener('click',()=>{
+  const done=()=>toast('本文をコピーしました');
+  try{ navigator.clipboard.writeText(ta.value).then(done,()=>{ta.focus();ta.select();toast('全文を選択しました。コピーしてください');}); }
+  catch(e){ ta.focus(); ta.select(); toast('全文を選択しました。コピーしてください'); }
+});
+$('fileIn').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ ta.value=String(r.result).replace(/^﻿/,''); lastGood=ta.value; onText(); toast(f.name+' を読み込みました'); };
+  r.onerror=()=>toast('読み込めませんでした。UTF-8 のテキストファイルを選んでください');
+  r.readAsText(f,'utf-8'); e.target.value='';
+});
+let armT=null; const clr=$('btnClear');
+clr.addEventListener('click',()=>{
+  if(!clr.classList.contains('arm')){ clr.classList.add('arm'); clr.textContent='もう一度押すと消去'; clearTimeout(armT); armT=setTimeout(()=>{clr.classList.remove('arm');clr.textContent='本文を消去';},3000); return; }
+  clearTimeout(armT); clr.classList.remove('arm'); clr.textContent='本文を消去';
+  ta.value=''; lastGood=''; onText(); toast('本文を消去しました');
+});
+
+let tT=null; function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),2200);}
+
+if('ResizeObserver' in window){ let w=0; new ResizeObserver(en=>{const nw=en[0].contentRect.width; if(nw>0&&Math.abs(nw-w)>8){w=nw;scheduleRender();}}).observe($('pane-preview')); }
+window.addEventListener('resize',scheduleRender);
+
+$('sampleTag').hidden=!isSample;
+writeForm(); updateMeter(); render();
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(render);
+})();
+</script>
+
+</body>
+</html>
