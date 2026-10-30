@@ -6,7 +6,7 @@
 <title>小説原稿・組版メーカー</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600&family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600&family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&family=Yuji+Syuku&display=swap">
 <style>
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
@@ -168,6 +168,22 @@ main.panes{flex:1;min-height:0;overflow:auto}
 .ln .em{text-emphasis:filled sesame;-webkit-text-emphasis:filled sesame}
 .ln .tcy{text-combine-upright:all;-webkit-text-combine:horizontal}
 .ln .x{color:var(--over);background:var(--over-bg)}
+.tb{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:var(--tg)}
+.v .tb{writing-mode:vertical-rl}
+.tb>div{white-space:pre-wrap;line-height:1.35;padding-inline:var(--ti);font-kerning:none}
+.tb>div.ov{outline:1px dashed var(--over)}
+.page.grid .tb{background:var(--band)}
+.ttl-body{display:grid;gap:12px;margin-top:10px}
+.ttl-body[hidden]{display:none}
+.ttl-sub{display:grid;gap:8px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--sunk)}
+.ttl-sub .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ttl-sub .row>*{min-width:0}
+.ttl-sub textarea,.ttl-sub input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-family:var(--f-mincho);font-size:1rem;resize:vertical}
+.ttl-sub .select{flex:1 1 7em;width:auto;background:var(--surface)}
+.ttl-sub .num{background:var(--surface)}
+.ttl-sub .num input{width:3.4em;font-size:1rem}
+.sw{display:flex;gap:8px;align-items:center;font-weight:700;cursor:pointer}
+.sw input{accent-color:var(--accent);width:18px;height:18px;margin:0}
 .empty-note{text-align:center;color:var(--muted);font-size:.85rem;margin-top:10px}
 
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:.88rem;font-weight:500;z-index:20;max-width:calc(100% - 32px);opacity:0;pointer-events:none;transition:opacity .2s}
@@ -181,6 +197,7 @@ main.panes{flex:1;min-height:0;overflow:auto}
   #printArea .page{box-shadow:none;background:#fff;color:#000;break-after:page;page-break-after:always}
   #printArea .page:last-child{break-after:auto;page-break-after:auto}
   #printArea .ln .x{color:inherit;background:none}
+  #printArea .tb>div.ov{outline:none}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -269,6 +286,60 @@ main.panes{flex:1;min-height:0;overflow:auto}
         <div class="seg">
           <label><input type="radio" name="font" id="font-m" value="mincho"><span style="font-family:var(--f-mincho)">明朝</span></label>
           <label><input type="radio" name="font" id="font-g" value="gothic"><span style="font-family:var(--f-gothic)">ゴシック</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>タイトル・作者名（1ページ目）</legend>
+        <div class="ttl-body" style="margin-top:0">
+        <div class="ttl-sub">
+          <label class="sw" for="tOn"><input type="checkbox" id="tOn">タイトルを入れる</label>
+          <div class="ttl-body" id="tBody" style="margin-top:0">
+            <textarea id="tText" rows="2" aria-label="タイトル" placeholder="改行で副題も入れられます"></textarea>
+            <div class="row">
+              <div class="num"><button type="button" data-step="tSize" data-d="-1" aria-label="タイトルの文字を小さく">−</button><input type="number" id="tSize" inputmode="decimal" min="5" max="72" step="0.5" aria-label="タイトルの文字サイズ"><button type="button" data-step="tSize" data-d="1" aria-label="タイトルの文字を大きく">＋</button></div>
+              <span class="unit">pt</span>
+              <select class="select" id="tFont" aria-label="タイトルのフォント">
+                <option value="mincho">明朝</option><option value="bmincho">太明朝</option><option value="gothic">ゴシック</option><option value="maru">丸ゴシック</option><option value="fude">筆文字</option>
+              </select>
+            </div>
+            <div class="row">
+              <select class="select" id="tAlign" aria-label="タイトルの位置">
+                <option value="start">上寄せ</option><option value="center">中央</option><option value="end">下寄せ</option>
+              </select>
+              <div class="num"><button type="button" data-step="tInd" data-d="-1" aria-label="字下げを減らす">−</button><input type="number" id="tInd" inputmode="numeric" min="0" max="20" aria-label="タイトルの字下げ"><button type="button" data-step="tInd" data-d="1" aria-label="字下げを増やす">＋</button></div>
+              <span class="unit">字あける</span>
+            </div>
+          </div>
+        </div>
+        <div class="ttl-sub">
+          <label class="sw" for="aOn"><input type="checkbox" id="aOn">作者名を入れる</label>
+          <div class="ttl-body" id="aBody" style="margin-top:0">
+            <input type="text" id="aText" aria-label="作者名" placeholder="作者名">
+            <div class="row">
+              <div class="num"><button type="button" data-step="aSize" data-d="-1" aria-label="作者名の文字を小さく">−</button><input type="number" id="aSize" inputmode="decimal" min="5" max="72" step="0.5" aria-label="作者名の文字サイズ"><button type="button" data-step="aSize" data-d="1" aria-label="作者名の文字を大きく">＋</button></div>
+              <span class="unit">pt</span>
+              <select class="select" id="aFont" aria-label="作者名のフォント">
+                <option value="mincho">明朝</option><option value="bmincho">太明朝</option><option value="gothic">ゴシック</option><option value="maru">丸ゴシック</option><option value="fude">筆文字</option>
+              </select>
+            </div>
+            <div class="row">
+              <select class="select" id="aAlign" aria-label="作者名の位置">
+                <option value="start">上寄せ</option><option value="center">中央</option><option value="end">下寄せ</option>
+              </select>
+              <div class="num"><button type="button" data-step="aInd" data-d="-1" aria-label="字下げを減らす">−</button><input type="number" id="aInd" inputmode="numeric" min="0" max="20" aria-label="作者名の字下げ"><button type="button" data-step="aInd" data-d="1" aria-label="字下げを増やす">＋</button></div>
+              <span class="unit">字あける</span>
+            </div>
+          </div>
+        </div>
+          <div>
+            <div class="grid-nm">
+              <span class="unit" style="font-weight:500">本文の</span>
+              <div class="num"><button type="button" data-step="tLines" data-d="-1" aria-label="行数を減らす">−</button><input type="number" id="tLines" inputmode="numeric" min="1" max="30" aria-label="タイトルに使う行数"><button type="button" data-step="tLines" data-d="1" aria-label="行数を増やす">＋</button></div>
+              <span class="unit" style="font-weight:500">行分を使う</span>
+            </div>
+            <p class="hint" id="tLinesHint"></p>
+          </div>
         </div>
       </fieldset>
 
@@ -381,9 +452,10 @@ const PRESETS={
   a5two:{label:'A5二段',size:'A5',orient:'p',dir:'v',cols:2,chars:25,lines:21,margin:14},
   contest:{label:'新人賞応募（A4横・縦書き40字×30行）',size:'A4',orient:'l',dir:'v',cols:1,chars:40,lines:30,margin:20}
 };
-const DEFAULTS={dir:'v',cols:1,size:'A6',orient:'p',chars:38,lines:16,margin:11,font:'mincho',tcy:true,fw:true,indent:false,grid:false,limit:10000,countMode:'nows',hard:false,zoom:100};
+const DEFAULTS={dir:'v',cols:1,size:'A6',orient:'p',chars:38,lines:16,margin:11,font:'mincho',tcy:true,fw:true,indent:false,grid:false,limit:10000,countMode:'nows',hard:false,zoom:100,
+  tOn:true,tText:'灯の町',tSize:16,tFont:'bmincho',tAlign:'start',tInd:2,aOn:true,aText:'作者名',aSize:10,aFont:'mincho',aAlign:'end',aInd:2,tLines:4};
 
-const SAMPLE=`　第一章　｜灯《ともしび》の町
+const SAMPLE=`　第一章　｜雨夜《あまよ》
 
 　駅前の時計台が12時を打つころ、私はようやく最後の一行を書き終えた。
 　窓の外では、雨がまだ細く降り続いている。原稿用紙の端は湿気で少し波打っていて、インクの匂いが部屋の隅まで満ちていた。
@@ -529,6 +601,8 @@ function writeForm(){
   $('chars').value=state.chars; $('lines').value=state.lines; $('margin').value=state.margin;
   $('opt-tcy').checked=state.tcy; $('opt-fw').checked=state.fw; $('opt-indent').checked=state.indent; $('opt-grid').checked=state.grid;
   $('limit').value=state.limit; $('countMode').value=state.countMode; $('opt-hard').checked=state.hard; $('zoom').value=state.zoom;
+  ['t','a'].forEach(p=>{$(p+'On').checked=state[p+'On'];['Text','Size','Font','Align','Ind'].forEach(k=>$(p+k).value=state[p+k]);});
+  $('tLines').value=state.tLines;
 }
 const clamp=(v,a,b,d)=>{v=parseInt(v,10); if(isNaN(v)) return d; return Math.max(a,Math.min(b,v));};
 function readForm(){
@@ -538,6 +612,12 @@ function readForm(){
   state.margin=clamp($('margin').value,5,40,state.margin);
   state.tcy=$('opt-tcy').checked; state.fw=$('opt-fw').checked; state.indent=$('opt-indent').checked; state.grid=$('opt-grid').checked;
   state.limit=clamp($('limit').value,0,9999999,0); state.countMode=$('countMode').value; state.hard=$('opt-hard').checked;
+  ['t','a'].forEach(p=>{
+    state[p+'On']=$(p+'On').checked; state[p+'Text']=$(p+'Text').value;
+    const z=parseFloat($(p+'Size').value); if(!isNaN(z)) state[p+'Size']=Math.max(5,Math.min(72,Math.round(z*2)/2));
+    state[p+'Font']=$(p+'Font').value; state[p+'Align']=$(p+'Align').value; state[p+'Ind']=clamp($(p+'Ind').value,0,20,state[p+'Ind']);
+  });
+  state.tLines=clamp($('tLines').value,1,30,state.tLines);
 }
 function persist(){save(KEY_S,JSON.stringify(state));}
 
@@ -580,6 +660,14 @@ function render(){
   if(g.squeezed) al.push('行数に対して行間が足りないので、文字を小さくして収めています。行数を減らすか字数を増やすと読みやすくなります。');
   if(pt(g.cs)<7) al.push('文字サイズが7pt未満です。印刷すると読みにくくなります。');
   if(pt(g.cs)>14) al.push('文字サイズが14ptを超えています。字数か行数を増やすと本らしい密度になります。');
+  const R=titleRows(g);
+  $('tBody').hidden=!state.tOn; $('aBody').hidden=!state.aOn;
+  $('tLinesHint').textContent=R?`1ページ目の本文は ${g.M-R} 行${g.k===2?'×2段':''}になります`:'タイトルも作者名も入れないので、本文は1行目から始まります';
+  [['start',g.v?'上寄せ':'左寄せ'],['center','中央'],['end',g.v?'下寄せ':'右寄せ']].forEach(([v,l])=>{['tAlign','aAlign'].forEach(id=>{$(id).querySelector(`option[value="${v}"]`).textContent=l;});});
+  if(R){
+    const need=(state.tOn&&state.tText?state.tText.split('\n').length*state.tSize*1.35:0)+(state.aOn&&state.aText?state.aSize*1.35:0)+(state.tOn&&state.aOn?pt(g.cs):0);
+    if(need>pt(R*g.p)+0.5) al.push(`タイトルと作者名が${R}行分の幅に収まりません。文字を小さくするか、使う行数を増やしてください。`);
+  }
   $('rAlert').textContent=al.join(' ');
   ['lab-tcy','lab-fw'].forEach(id=>{$(id).classList.toggle('is-off',!g.v);$(id).querySelector('input').disabled=!g.v;});
   ta.classList.toggle('gothic',state.font==='gothic');
@@ -588,7 +676,7 @@ function render(){
   const {paras}=buildUnits(ta.value,{v:g.v,tcy:state.tcy,fw:state.fw,indent:state.indent,mode:state.countMode,limit:state.limit});
   const all=[]; paras.forEach(p=>breakPara(p,g.N).forEach(l=>all.push(l)));
   while(all.length>1&&all[all.length-1].length===0) all.pop();
-  const per=g.M*g.k, nPages=Math.max(1,Math.ceil(all.length/per));
+  const pages=paginate(g,all,R), nPages=pages.length;
   $('sPages').textContent=fmt(ta.value.trim()?nPages:0);
   $('sLines').textContent=fmt(ta.value.trim()?all.length:0);
   $('pvSummary').textContent=`全 ${fmt(nPages)} ページ · ${fmt(all.length)} 行`;
@@ -597,38 +685,66 @@ function render(){
   let avail=pane.clientWidth-40; if(avail<200) avail=(lastWidth||Math.min(window.innerWidth,520))-40;
   else lastWidth=pane.clientWidth;
   const baseW=Math.min(avail,g.W>g.H?640:460)*state.zoom/100;
-  $('pages').innerHTML=pagesHTML(g,all,nPages,baseW/g.W,'px',true);
-  lastLayout={g,all,nPages};
+  $('pages').innerHTML=pagesHTML(g,pages,R,baseW/g.W,'px',true);
+  lastLayout={g,pages,R};
+}
+function titleRows(g){
+  const on=(state.tOn&&state.tText.trim())||(state.aOn&&state.aText.trim());
+  return on?Math.min(state.tLines,g.M-1):0;
+}
+function paginate(g,all,R){
+  const pages=[]; let idx=0;
+  do{
+    const r0=pages.length===0?R:0, slots=[];
+    for(let j=0;j<g.k;j++) for(let i=r0;i<g.M;i++) slots.push({j,i,line:all[idx++]});
+    pages.push(slots);
+  }while(idx<all.length);
+  return pages;
+}
+const TFONT={mincho:['var(--f-mincho)',600],bmincho:['var(--f-display)',800],gothic:['var(--f-gothic)',700],maru:['"Zen Maru Gothic","Hiragino Maru Gothic ProN",var(--f-gothic)',700],fude:['"Yuji Syuku",var(--f-mincho)',400]};
+const TALIGN={start:'start',center:'center',end:'end'};
+function titleHTML(g,R,f,s,u){
+  const mm=ptv=>ptv*0.3527778;
+  let x,y,w,h;
+  if(g.v){x=g.m+g.cW-R*g.p;y=g.m;w=R*g.p;h=g.cH;}else{x=g.m;y=g.m;w=g.cW;h=R*g.p;}
+  const box=g.v?R*g.p:R*g.p;
+  const part=(p,cls)=>{
+    if(!state[p+'On']||!state[p+'Text'].trim()) return '';
+    const [fam,wt]=TFONT[state[p+'Font']]||TFONT.mincho;
+    const lines=p==='t'?state.tText.replace(/\n+$/,'').split('\n').length:1;
+    const ov=lines*mm(state[p+'Size'])*1.35>box+0.2;
+    const txt=p==='t'?state.tText.replace(/\n+$/,''):state.aText.replace(/\n/g,' ');
+    return `<div class="${ov?'ov':''}" style="font-family:${fam};font-weight:${wt};font-size:${f(mm(state[p+'Size']))};text-align:${TALIGN[state[p+'Align']]};--ti:${f(state[p+'Ind']*g.cs)}">${esc(txt)}</div>`;
+  };
+  return `<div class="tb" style="left:${f(x)};top:${f(y)};width:${f(w)};height:${f(h)};--tg:${f(g.cs)}">${part('t')}${part('a')}</div>`;
 }
 let lastLayout=null;
-function pagesHTML(g,all,nPages,s,u,screen){
+function pagesHTML(g,pages,R,s,u,screen){
   const f=v=>(v*s).toFixed(3)+u;
-  const per=g.M*g.k, colLen=g.N*g.cs, gap=2*g.cs, grid=screen&&state.grid;
+  const colLen=g.N*g.cs, gap=2*g.cs, grid=screen&&state.grid, nPages=pages.length;
   const cls='page '+(g.v?'v':'h')+(state.font==='gothic'?' gothic':'')+(grid?' grid':'');
   const H=screen?g.H:g.H-0.3;
   const style=`width:${f(g.W)};height:${f(H)};--cs:${f(g.cs)};--p:${f(g.p)};--L:${f(colLen)}`;
   const out=[];
-  for(let pg=0;pg<nPages;pg++){
+  pages.forEach((slots,pg)=>{
     out.push(screen?`<div class="pg"><div class="${cls}" style="${style}">`:`<div class="${cls}" style="${style}">`);
-    for(let j=0;j<g.k;j++){
-      for(let i=0;i<g.M;i++){
-        const line=all[pg*per+j*g.M+i];
-        if(line===undefined&&!grid) continue;
-        let x,y;
-        if(g.v){x=g.m+g.cW-(i+1)*g.p; y=g.m+j*(colLen+gap);}
-        else{x=g.m+j*(colLen+gap); y=g.m+i*g.p;}
-        out.push(`<div class="ln" style="left:${f(x)};top:${f(y)}">${line?line.map(unitHTML).join(''):''}</div>`);
-      }
-    }
+    if(pg===0&&R) out.push(titleHTML(g,R,f,s,u));
+    slots.forEach(({j,i,line})=>{
+      if(line===undefined&&!grid) return;
+      let x,y;
+      if(g.v){x=g.m+g.cW-(i+1)*g.p; y=g.m+j*(colLen+gap);}
+      else{x=g.m+j*(colLen+gap); y=g.m+i*g.p;}
+      out.push(`<div class="ln" style="left:${f(x)};top:${f(y)}">${line?line.map(unitHTML).join(''):''}</div>`);
+    });
     out.push(screen?`</div><div class="folio">${pg+1} / ${nPages}</div></div>`:`</div>`);
-  }
+  });
   return out.join('');
 }
 function renderPrint(){
   render();
-  const {g,all,nPages}=lastLayout;
+  const {g,pages,R}=lastLayout;
   $('pageRule').textContent=`@page{size:${g.W}mm ${g.H}mm;margin:0}`;
-  $('printArea').innerHTML=pagesHTML(g,all,nPages,1,'mm',false);
+  $('printArea').innerHTML=pagesHTML(g,pages,R,1,'mm',false);
 }
 window.addEventListener('beforeprint',renderPrint);
 
@@ -658,7 +774,7 @@ form.addEventListener('input',e=>{
 form.addEventListener('change',e=>{ if(['chars','lines','limit'].includes(e.target.id)){ readForm(); writeForm(); persist(); updateMeter(); render(); }});
 form.addEventListener('click',e=>{
   const b=e.target.closest('[data-step]');
-  if(b){ const el=$(b.dataset.step); el.value=(parseInt(el.value,10)||0)+parseInt(b.dataset.d,10); readForm(); writeForm(); persist(); render(); return; }
+  if(b){ const el=$(b.dataset.step); el.value=(parseFloat(el.value)||0)+parseInt(b.dataset.d,10); readForm(); writeForm(); persist(); render(); return; }
   const pr=e.target.closest('[data-preset]');
   if(pr){ const P=PRESETS[pr.dataset.preset]; Object.keys(P).forEach(k=>{if(k!=='label') state[k]=P[k];}); writeForm(); persist(); render(); toast(P.label+' の設定にしました'); }
 });
