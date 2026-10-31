@@ -154,6 +154,36 @@ main.panes{flex:1;min-height:0;overflow:auto}
 .pv-head p{margin:0;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .pv-head .range-row{width:180px}
 .pages{display:flex;flex-wrap:wrap;gap:22px 18px;justify-content:center}
+.spread{display:flex;max-width:100%}
+.spread .pg+.pg .page{box-shadow:var(--page-shadow),inset 1px 0 0 rgba(0,0,0,.08)}
+.pg.ph .page{visibility:hidden}
+.sheet-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:100%}
+.sheet{display:flex;position:relative;box-shadow:var(--page-shadow);overflow:hidden;flex:none}
+.sheet .page{box-shadow:none}
+.sheet::after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed var(--grid)}
+.page.blank{display:flex;align-items:center;justify-content:center}
+.view-seg{display:flex;gap:4px}
+.view-seg button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;font-size:.82rem;font-weight:700;cursor:pointer;color:var(--muted)}
+.view-seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.view-seg button[hidden]{display:none}
+.mgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mgrid label{display:grid;gap:4px;font-size:.8rem;color:var(--muted);font-weight:700;min-width:0}
+.mgrid .num{width:100%}
+.mgrid .num input{flex:1;min-width:0;width:auto;font-size:1rem}
+.mgrid .num .u{padding-right:10px;color:var(--muted);font-size:.8rem}
+dialog.dlg{border:0;border-radius:14px;padding:0;background:var(--surface);color:var(--fg);width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog.dlg::backdrop{background:rgba(10,14,24,.5)}
+.dlg-in{padding:20px;display:grid;gap:16px}
+.dlg-in h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.15rem;letter-spacing:.04em}
+.dlg-in .lead{margin:-8px 0 0;font-size:.85rem;color:var(--muted)}
+.cat{display:grid;gap:4px;text-align:left;border:1px solid var(--line);background:var(--sunk);border-radius:10px;padding:14px 16px;cursor:pointer}
+.cat b{font-size:1rem}
+.cat span{font-size:.82rem;color:var(--muted)}
+.cat:hover{border-color:var(--accent)}
+.cat[disabled]{opacity:.5;cursor:default}
+.steps{margin:0;padding:12px 14px 12px 32px;background:var(--sunk);border:1px solid var(--line);border-radius:10px;font-size:.85rem;display:grid;gap:6px}
+.caution{font-size:.8rem;color:var(--warn);margin:0;font-weight:500}
+.dlg-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .pg{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:100%}
 .folio{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .page{position:relative;background:var(--paper);color:var(--ink);box-shadow:var(--page-shadow);flex:none;overflow:hidden;font-family:var(--f-mincho)}
@@ -194,8 +224,10 @@ main.panes{flex:1;min-height:0;overflow:auto}
   html,body{height:auto!important;overflow:visible!important;background:#fff!important;display:block!important}
   body>*:not(#printArea){display:none!important}
   #printArea{display:block}
-  #printArea .page{box-shadow:none;background:#fff;color:#000;break-after:page;page-break-after:always}
-  #printArea .page:last-child{break-after:auto;page-break-after:auto}
+  #printArea .page,#printArea .sheet{box-shadow:none;background:#fff;color:#000}
+  #printArea>.page,#printArea>.sheet{break-after:page;page-break-after:always}
+  #printArea>:last-child{break-after:auto;page-break-after:auto}
+  #printArea .sheet::after{display:none}
   #printArea .ln .x{color:inherit;background:none}
   #printArea .tb>div.ov{outline:none}
 }
@@ -251,6 +283,14 @@ main.panes{flex:1;min-height:0;overflow:auto}
       </fieldset>
 
       <fieldset class="group">
+        <legend>綴じ方向</legend>
+        <div class="seg">
+          <label><input type="radio" name="bind" id="bind-r" value="r"><span>右綴じ<small>縦書きの本</small></span></label>
+          <label><input type="radio" name="bind" id="bind-l" value="l"><span>左綴じ<small>横書きの本</small></span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
         <legend>原稿サイズ</legend>
         <div class="seg">
           <label><input type="radio" name="size" id="size-A4" value="A4"><span>A4<small>210×297</small></span></label>
@@ -258,8 +298,9 @@ main.panes{flex:1;min-height:0;overflow:auto}
           <label><input type="radio" name="size" id="size-A5" value="A5"><span>A5<small>148×210</small></span></label>
           <label><input type="radio" name="size" id="size-B6" value="B6"><span>B6<small>128×182</small></span></label>
           <label><input type="radio" name="size" id="size-A6" value="A6"><span>A6文庫<small>105×148</small></span></label>
+          <label><input type="radio" name="size" id="size-other" value="copy"><span>その他<small id="otherSmall">コピー本など</small></span></label>
         </div>
-        <div class="seg" style="margin-top:6px">
+        <div class="seg" style="margin-top:6px" id="orientSeg">
           <label><input type="radio" name="orient" id="orient-p" value="p"><span>縦長</span></label>
           <label><input type="radio" name="orient" id="orient-l" value="l"><span>横長</span></label>
         </div>
@@ -277,8 +318,14 @@ main.panes{flex:1;min-height:0;overflow:auto}
       </fieldset>
 
       <fieldset class="group">
-        <legend>余白（天地左右）</legend>
-        <div class="range-row"><input type="range" id="margin" min="5" max="40" step="1"><output id="marginOut">0 mm</output></div>
+        <legend>余白</legend>
+        <div class="mgrid">
+          <label>天（上）<span class="num"><input type="number" id="mT" inputmode="decimal" min="0" max="80" step="0.5"><span class="u">mm</span></span></label>
+          <label>地（下）<span class="num"><input type="number" id="mB" inputmode="decimal" min="0" max="80" step="0.5"><span class="u">mm</span></span></label>
+          <label>のど（綴じ側）<span class="num"><input type="number" id="mN" inputmode="decimal" min="0" max="80" step="0.5"><span class="u">mm</span></span></label>
+          <label>小口（外側）<span class="num"><input type="number" id="mK" inputmode="decimal" min="0" max="80" step="0.5"><span class="u">mm</span></span></label>
+        </div>
+        <p class="hint" id="mHint"></p>
       </fieldset>
 
       <fieldset class="group">
@@ -429,12 +476,70 @@ main.panes{flex:1;min-height:0;overflow:auto}
     <div class="pv-head">
       <p id="pvSummary">—</p>
       <button type="button" class="btn primary" id="btnPrint">印刷・PDF保存</button>
-      <div class="range-row"><input type="range" id="zoom" min="40" max="100" step="5" aria-label="表示倍率"><output id="zoomOut">100%</output></div>
+      <div class="view-seg" role="group" aria-label="表示">
+        <button type="button" data-view="single" aria-pressed="true">1ページ</button>
+        <button type="button" data-view="spread" aria-pressed="false">見開き</button>
+        <button type="button" data-view="impose" aria-pressed="false">面付け</button>
+      </div>
+      <select class="select" id="printMode" style="width:auto" aria-label="印刷のしかた">
+        <option value="impose">印刷：面付け（2つ折り用）</option>
+        <option value="pages">印刷：1ページずつ</option>
+      </select>
+      <div class="range-row"><input type="range" id="zoom" min="40" max="150" step="5" aria-label="表示倍率"><output id="zoomOut">100%</output></div>
     </div>
     <div class="pages" id="pages"></div>
   </section>
 </main>
 
+<dialog class="dlg" id="otherDlg" aria-labelledby="dlgT1">
+  <div class="dlg-in" id="dlgStep1">
+    <h2 id="dlgT1">その他のサイズ</h2>
+    <p class="lead">作りたい本の種類を選んでください。</p>
+    <button type="button" class="cat" id="catCopy"><b>コピー本</b><span>A3・B4・A4・B5の用紙を2つ折りにして、中央をホチキスで留める本。コンビニのコピー機で印刷できます。</span></button>
+    <div class="dlg-actions"><button type="button" class="btn" data-dlg-close>閉じる</button></div>
+  </div>
+  <div class="dlg-in" id="dlgStep2" hidden>
+    <h2>コピー本</h2>
+    <p class="lead">用紙1枚を2つ折りにすると4ページになります。ページの並びはこのツールが自動で入れ替えます。</p>
+    <fieldset class="group" style="margin:0">
+      <legend>用紙サイズ（→ 仕上がりサイズ）</legend>
+      <div class="seg">
+        <label><input type="radio" name="cSheet" value="A3"><span>A3用紙<small>→ A4 210×297</small></span></label>
+        <label><input type="radio" name="cSheet" value="B4"><span>B4用紙<small>→ B5 182×257</small></span></label>
+        <label><input type="radio" name="cSheet" value="A4"><span>A4用紙<small>→ A5 148×210</small></span></label>
+        <label><input type="radio" name="cSheet" value="B5"><span>B5用紙<small>→ B6 128×182</small></span></label>
+      </div>
+    </fieldset>
+    <fieldset class="group" style="margin:0">
+      <legend>綴じ方向</legend>
+      <div class="seg">
+        <label><input type="radio" name="cBind" value="r"><span>右綴じ<small>縦書きの本</small></span></label>
+        <label><input type="radio" name="cBind" value="l"><span>左綴じ<small>横書きの本</small></span></label>
+      </div>
+    </fieldset>
+    <fieldset class="group" style="margin:0">
+      <legend>余白（仕上がり1ページあたり）</legend>
+      <div class="mgrid">
+          <label>天（上）<span class="num"><input type="number" id="cT" inputmode="decimal" min="0" max="80" step="0.5"><span class="u">mm</span></span></label>
+          <label>地（下）<span class="num"><input type="number" id="cB" inputmode="decimal" min="0" max="80" step="0.5"><span class="u">mm</span></span></label>
+          <label>のど（綴じ側）<span class="num"><input type="number" id="cN" inputmode="decimal" min="0" max="80" step="0.5"><span class="u">mm</span></span></label>
+          <label>小口（外側）<span class="num"><input type="number" id="cK" inputmode="decimal" min="0" max="80" step="0.5"><span class="u">mm</span></span></label>
+        </div>
+      <div style="margin-top:8px"><button type="button" class="chip" id="cStd">このサイズの標準にする</button></div>
+    </fieldset>
+    <div class="checks"><label><input type="checkbox" id="cCover">先頭に表紙と表紙裏の白ページを2ページ入れる</label></div>
+    <div>
+      <div class="label">印刷のしかた</div>
+      <ol class="steps" id="cSteps"></ol>
+    </div>
+    <p class="caution">コピー機の「小冊子」「製本」機能は使わないでください。ページの並びが二重に入れ替わります。</p>
+    <div class="dlg-actions">
+      <button type="button" class="btn" id="dlgBack">戻る</button>
+      <button type="button" class="btn" data-dlg-close>やめる</button>
+      <button type="button" class="btn primary" id="dlgApply">この設定にする</button>
+    </div>
+  </div>
+</dialog>
 <div id="printArea" aria-hidden="true"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -445,14 +550,17 @@ const KEY_T='shosetsu-kumihan:text', KEY_S='shosetsu-kumihan:settings';
 const SIZES={A4:[210,297],B5:[182,257],A5:[148,210],B6:[128,182],A6:[105,148]};
 const SIZE_LABEL={A4:'A4',B5:'B5',A5:'A5',B6:'B6',A6:'A6文庫'};
 const DEF_MARGIN={A4:20,B5:18,A5:15,B6:13,A6:11};
+const SHEETS={A3:[297,420],B4:[257,364],A4:[210,297],B5:[182,257]};
+const FINISH={A3:'A4',B4:'B5',A4:'A5',B5:'B6'};
+const stdMargins=name=>{const d=DEF_MARGIN[name];return {mT:d,mB:d+1,mN:d,mK:d};};
 const PRESETS={
-  bunko:{label:'文庫',size:'A6',orient:'p',dir:'v',cols:1,chars:38,lines:16,margin:11},
-  b6:{label:'B6一段',size:'B6',orient:'p',dir:'v',cols:1,chars:40,lines:17,margin:13},
-  a5one:{label:'A5一段',size:'A5',orient:'p',dir:'v',cols:1,chars:42,lines:17,margin:15},
-  a5two:{label:'A5二段',size:'A5',orient:'p',dir:'v',cols:2,chars:25,lines:21,margin:14},
-  contest:{label:'新人賞応募（A4横・縦書き40字×30行）',size:'A4',orient:'l',dir:'v',cols:1,chars:40,lines:30,margin:20}
+  bunko:{label:'文庫',size:'A6',orient:'p',dir:'v',cols:1,chars:38,lines:16,mT:11,mB:12,mN:11,mK:11,bind:'r'},
+  b6:{label:'B6一段',size:'B6',orient:'p',dir:'v',cols:1,chars:40,lines:17,mT:13,mB:14,mN:13,mK:13,bind:'r'},
+  a5one:{label:'A5一段',size:'A5',orient:'p',dir:'v',cols:1,chars:42,lines:17,mT:15,mB:16,mN:15,mK:15,bind:'r'},
+  a5two:{label:'A5二段',size:'A5',orient:'p',dir:'v',cols:2,chars:25,lines:21,mT:14,mB:15,mN:14,mK:14,bind:'r'},
+  contest:{label:'新人賞応募（A4横・縦書き40字×30行）',size:'A4',orient:'l',dir:'v',cols:1,chars:40,lines:30,mT:20,mB:21,mN:20,mK:20,bind:'r'}
 };
-const DEFAULTS={dir:'v',cols:1,size:'A6',orient:'p',chars:38,lines:16,margin:11,font:'mincho',tcy:true,fw:true,indent:false,grid:false,limit:10000,countMode:'nows',hard:false,zoom:100,
+const DEFAULTS={dir:'v',cols:1,size:'A6',orient:'p',chars:38,lines:16,mT:11,mB:12,mN:11,mK:11,bind:'r',copySheet:'A4',copyCover:false,view:'single',printMode:'impose',font:'mincho',tcy:true,fw:true,indent:false,grid:false,limit:10000,countMode:'nows',hard:false,zoom:100,
   tOn:true,tText:'灯の町',tSize:16,tFont:'bmincho',tAlign:'start',tInd:2,aOn:true,aText:'作者名',aSize:10,aFont:'mincho',aAlign:'end',aInd:2,tLines:4};
 
 const SAMPLE=`　第一章　｜雨夜《あまよ》
@@ -478,7 +586,8 @@ function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function save(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 
 let state=Object.assign({},DEFAULTS);
-try{const s=JSON.parse(load(KEY_S)||'null'); if(s) Object.assign(state,s);}catch(e){}
+try{const s=JSON.parse(load(KEY_S)||'null'); if(s){ if(s.margin!=null&&s.mT==null){s.mT=s.mB=s.mN=s.mK=s.margin;} delete s.margin; Object.assign(state,s);} }catch(e){}
+if(state.size!=='copy'&&!SIZES[state.size]) state.size='A6';
 const ta=$('manuscript');
 const savedText=load(KEY_T);
 let isSample = savedText===null;
@@ -582,23 +691,34 @@ function unitHTML(u){
 }
 
 /* ---------- geometry ---------- */
+function pageSize(){
+  if(state.size==='copy'){const [sw,sh]=SHEETS[state.copySheet]||SHEETS.A4; return [sh/2,sw];}
+  const [w0,h0]=SIZES[state.size]; return state.orient==='l'?[h0,w0]:[w0,h0];
+}
 function geom(){
-  const [w0,h0]=SIZES[state.size];
-  const W=state.orient==='l'?h0:w0, H=state.orient==='l'?w0:h0;
-  const m=Math.min(state.margin,Math.floor(Math.min(W,H)/2)-10);
-  const cW=W-2*m, cH=H-2*m, v=state.dir==='v';
+  const [W,H]=pageSize();
+  let mT=state.mT,mB=state.mB,mN=state.mN,mK=state.mK;
+  const fit=(a,b,tot)=>{const mx=tot-20; if(a+b>mx){const r=mx/(a+b); return [a*r,b*r];} return [a,b];};
+  [mN,mK]=fit(mN,mK,W); [mT,mB]=fit(mT,mB,H);
+  const cW=W-mN-mK, cH=H-mT-mB, v=state.dir==='v';
   const L=v?cH:cW, C=v?cW:cH, N=state.chars, M=state.lines, k=state.cols;
   let cs=L/(k*N+(k-1)*2); const p=C/M; let squeezed=false;
   if(p<cs*1.25){cs=p/1.25;squeezed=true;}
-  return {W,H,m,cW,cH,v,L,C,N,M,k,cs,p,squeezed};
+  const copy=state.size==='copy';
+  return {W,H,mT,mB,mN,mK,cW,cH,v,L,C,N,M,k,cs,p,squeezed,copy,shrunk:(mN+mK+mT+mB)<(state.mN+state.mK+state.mT+state.mB)-0.01};
 }
+/* left margin of physical page index (0-based) */
+function leftM(g,idx){const n=idx+1; const isLeft=state.bind==='r'?(n%2===1):(n%2===0); return isLeft?g.mK:g.mN;}
 const pt=mm=>(mm/0.3527778);
 
 /* ---------- form sync ---------- */
 const form=$('setup');
 function writeForm(){
   ['dir','cols','size','orient','font'].forEach(n=>{const el=form.querySelector(`input[name="${n}"][value="${state[n]}"]`); if(el) el.checked=true;});
-  $('chars').value=state.chars; $('lines').value=state.lines; $('margin').value=state.margin;
+  $('chars').value=state.chars; $('lines').value=state.lines;
+  ['T','B','N','K'].forEach(x=>$('m'+x).value=state['m'+x]);
+  const bi=form.querySelector(`input[name="bind"][value="${state.bind}"]`); if(bi) bi.checked=true;
+  $('printMode').value=state.printMode;
   $('opt-tcy').checked=state.tcy; $('opt-fw').checked=state.fw; $('opt-indent').checked=state.indent; $('opt-grid').checked=state.grid;
   $('limit').value=state.limit; $('countMode').value=state.countMode; $('opt-hard').checked=state.hard; $('zoom').value=state.zoom;
   ['t','a'].forEach(p=>{$(p+'On').checked=state[p+'On'];['Text','Size','Font','Align','Ind'].forEach(k=>$(p+k).value=state[p+k]);});
@@ -607,9 +727,10 @@ function writeForm(){
 const clamp=(v,a,b,d)=>{v=parseInt(v,10); if(isNaN(v)) return d; return Math.max(a,Math.min(b,v));};
 function readForm(){
   const r=n=>(form.querySelector(`input[name="${n}"]:checked`)||{}).value;
-  state.dir=r('dir')||'v'; state.cols=parseInt(r('cols')||'1',10); state.size=r('size')||'A6'; state.orient=r('orient')||'p'; state.font=r('font')||'mincho';
+  state.dir=r('dir')||'v'; state.cols=parseInt(r('cols')||'1',10); state.size=r('size')||state.size; state.orient=r('orient')||'p'; state.font=r('font')||'mincho';
   state.chars=clamp($('chars').value,5,80,state.chars); state.lines=clamp($('lines').value,3,60,state.lines);
-  state.margin=clamp($('margin').value,5,40,state.margin);
+  ['T','B','N','K'].forEach(x=>{const z=parseFloat($('m'+x).value); if(!isNaN(z)) state['m'+x]=Math.max(0,Math.min(80,Math.round(z*2)/2));});
+  state.bind=r('bind')||state.bind;
   state.tcy=$('opt-tcy').checked; state.fw=$('opt-fw').checked; state.indent=$('opt-indent').checked; state.grid=$('opt-grid').checked;
   state.limit=clamp($('limit').value,0,9999999,0); state.countMode=$('countMode').value; state.hard=$('opt-hard').checked;
   ['t','a'].forEach(p=>{
@@ -647,11 +768,15 @@ let lastWidth=0;
 function render(){
   const g=geom();
   const dirL=g.v?'縦書き':'横書き', colL=g.k===2?'二段組み':'一段組み';
-  const sizeL=SIZE_LABEL[state.size]+(state.orient==='l'?'横長':'');
-  $('specLine').textContent=`${sizeL} · ${dirL} · ${colL} · ${g.N}字×${g.M}行${g.k===2?'×2段':''}`;
+  const sizeL=g.copy?`コピー本 ${FINISH[state.copySheet]}（${state.copySheet}用紙）`:SIZE_LABEL[state.size]+(state.orient==='l'?'横長':'');
+  $('specLine').textContent=`${sizeL} · ${dirL} · ${state.bind==='r'?'右綴じ':'左綴じ'} · ${colL} · ${g.N}字×${g.M}行${g.k===2?'×2段':''}`;
+  $('otherSmall').textContent=g.copy?`コピー本 ${FINISH[state.copySheet]}`:'コピー本など';
+  $('orientSeg').hidden=g.copy;
+  $('mHint').textContent=`のど＝綴じる側です。${state.bind==='r'?'右綴じでは奇数ページの右側、偶数ページの左側':'左綴じでは奇数ページの左側、偶数ページの右側'}になります。`+(g.shrunk?' 余白が大きすぎるので、縮めて組んでいます。':'');
+  document.querySelectorAll('.view-seg button').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.view===curView()?'true':'false'); if(b.dataset.view==='impose') b.hidden=!g.copy;});
+  $('printMode').hidden=!g.copy;
   $('nmLegend').textContent=g.k===2?'字数 × 行数（1段あたり）':'字数 × 行数';
   $('nmHint').textContent=`1ページ 最大 ${fmt(g.N*g.M*g.k)}字`;
-  $('marginOut').textContent=g.m+' mm';
   $('rCs').textContent=pt(g.cs).toFixed(1)+' pt（'+g.cs.toFixed(2)+' mm）';
   $('rP').textContent=pt(g.p).toFixed(1)+' pt';
   $('rArea').textContent=g.cW.toFixed(0)+' × '+g.cH.toFixed(0)+' mm';
@@ -676,17 +801,19 @@ function render(){
   const {paras}=buildUnits(ta.value,{v:g.v,tcy:state.tcy,fw:state.fw,indent:state.indent,mode:state.countMode,limit:state.limit});
   const all=[]; paras.forEach(p=>breakPara(p,g.N).forEach(l=>all.push(l)));
   while(all.length>1&&all[all.length-1].length===0) all.pop();
-  const pages=paginate(g,all,R), nPages=pages.length;
+  const content=paginate(g,all,R), book=buildBook(g,content), nPages=book.length;
+  const blanks=book.filter(p=>p.blank).length;
   $('sPages').textContent=fmt(ta.value.trim()?nPages:0);
   $('sLines').textContent=fmt(ta.value.trim()?all.length:0);
-  $('pvSummary').textContent=`全 ${fmt(nPages)} ページ · ${fmt(all.length)} 行`;
+  $('pvSummary').textContent=g.copy?`全 ${fmt(nPages)} ページ（うち白 ${blanks}）· ${state.copySheet}用紙 ${nPages/4} 枚・両面`:`全 ${fmt(nPages)} ページ · ${fmt(all.length)} 行`;
 
   const pane=$('pane-preview');
   let avail=pane.clientWidth-40; if(avail<200) avail=(lastWidth||Math.min(window.innerWidth,520))-40;
   else lastWidth=pane.clientWidth;
-  const baseW=Math.min(avail,g.W>g.H?640:460)*state.zoom/100;
-  $('pages').innerHTML=pagesHTML(g,pages,R,baseW/g.W,'px',true);
-  lastLayout={g,pages,R};
+  const view=curView();
+  const baseW=(view==='single'?Math.min(avail,g.W>g.H?640:460):Math.min(avail/2,g.W>g.H?420:330))*state.zoom/100;
+  $('pages').innerHTML=screenHTML(g,book,R,baseW/g.W,view);
+  lastLayout={g,book,R};
 }
 function titleRows(g){
   const on=(state.tOn&&state.tText.trim())||(state.aOn&&state.aText.trim());
@@ -697,16 +824,40 @@ function paginate(g,all,R){
   do{
     const r0=pages.length===0?R:0, slots=[];
     for(let j=0;j<g.k;j++) for(let i=r0;i<g.M;i++) slots.push({j,i,line:all[idx++]});
-    pages.push(slots);
+    pages.push({slots,first:pages.length===0});
   }while(idx<all.length);
   return pages;
 }
+function buildBook(g,content){
+  const book=content.slice();
+  if(g.copy){
+    if(state.copyCover) book.unshift({blank:true},{blank:true});
+    while(book.length%4) book.push({blank:true});
+  }
+  return book;
+}
+const curView=()=>(state.view==='impose'&&state.size!=='copy')?'single':state.view;
+function spreadsOf(n){
+  const out=[]; const r=state.bind==='r';
+  out.push(r?[0,null]:[null,0]);
+  for(let a=1;a<n;a+=2){ const b=a+1<n?a+1:null; out.push(r?[b,a]:[a,b]); }
+  return out;
+}
+function sheetsOf(n){
+  const out=[]; const r=state.bind==='r';
+  for(let i=0;i<n/4;i++){
+    const A=2*i, Z=n-1-2*i;
+    out.push({i,side:'表',pair:r?[A,Z]:[Z,A]});
+    out.push({i,side:'裏',pair:r?[Z-1,A+1]:[A+1,Z-1]});
+  }
+  return out;
+}
 const TFONT={mincho:['var(--f-mincho)',600],bmincho:['var(--f-display)',800],gothic:['var(--f-gothic)',700],maru:['"Zen Maru Gothic","Hiragino Maru Gothic ProN",var(--f-gothic)',700],fude:['"Yuji Syuku",var(--f-mincho)',400]};
 const TALIGN={start:'start',center:'center',end:'end'};
-function titleHTML(g,R,f,s,u){
+function titleHTML(g,R,f,s,u,lm){
   const mm=ptv=>ptv*0.3527778;
   let x,y,w,h;
-  if(g.v){x=g.m+g.cW-R*g.p;y=g.m;w=R*g.p;h=g.cH;}else{x=g.m;y=g.m;w=g.cW;h=R*g.p;}
+  if(g.v){x=lm+g.cW-R*g.p;y=g.mT;w=R*g.p;h=g.cH;}else{x=lm;y=g.mT;w=g.cW;h=R*g.p;}
   const box=g.v?R*g.p:R*g.p;
   const part=(p,cls)=>{
     if(!state[p+'On']||!state[p+'Text'].trim()) return '';
@@ -719,32 +870,44 @@ function titleHTML(g,R,f,s,u){
   return `<div class="tb" style="left:${f(x)};top:${f(y)};width:${f(w)};height:${f(h)};--tg:${f(g.cs)}">${part('t')}${part('a')}</div>`;
 }
 let lastLayout=null;
-function pagesHTML(g,pages,R,s,u,screen){
+function pageDiv(g,book,R,idx,s,u,screen){
   const f=v=>(v*s).toFixed(3)+u;
-  const colLen=g.N*g.cs, gap=2*g.cs, grid=screen&&state.grid, nPages=pages.length;
-  const cls='page '+(g.v?'v':'h')+(state.font==='gothic'?' gothic':'')+(grid?' grid':'');
+  const colLen=g.N*g.cs, gap=2*g.cs, grid=screen&&state.grid;
   const H=screen?g.H:g.H-0.3;
   const style=`width:${f(g.W)};height:${f(H)};--cs:${f(g.cs)};--p:${f(g.p)};--L:${f(colLen)}`;
-  const out=[];
-  pages.forEach((slots,pg)=>{
-    out.push(screen?`<div class="pg"><div class="${cls}" style="${style}">`:`<div class="${cls}" style="${style}">`);
-    if(pg===0&&R) out.push(titleHTML(g,R,f,s,u));
-    slots.forEach(({j,i,line})=>{
-      if(line===undefined&&!grid) return;
-      let x,y;
-      if(g.v){x=g.m+g.cW-(i+1)*g.p; y=g.m+j*(colLen+gap);}
-      else{x=g.m+j*(colLen+gap); y=g.m+i*g.p;}
-      out.push(`<div class="ln" style="left:${f(x)};top:${f(y)}">${line?line.map(unitHTML).join(''):''}</div>`);
-    });
-    out.push(screen?`</div><div class="folio">${pg+1} / ${nPages}</div></div>`:`</div>`);
+  const pg=book[idx];
+  if(!pg||pg.blank) return `<div class="page blank" style="${style}"></div>`;
+  const cls='page '+(g.v?'v':'h')+(state.font==='gothic'?' gothic':'')+(grid?' grid':'');
+  const lm=leftM(g,idx), out=[`<div class="${cls}" style="${style}">`];
+  if(pg.first&&R) out.push(titleHTML(g,R,f,s,u,lm));
+  pg.slots.forEach(({j,i,line})=>{
+    if(line===undefined&&!grid) return;
+    let x,y;
+    if(g.v){x=lm+g.cW-(i+1)*g.p; y=g.mT+j*(colLen+gap);}
+    else{x=lm+j*(colLen+gap); y=g.mT+i*g.p;}
+    out.push(`<div class="ln" style="left:${f(x)};top:${f(y)}">${line?line.map(unitHTML).join(''):''}</div>`);
   });
+  out.push('</div>');
   return out.join('');
+}
+function screenHTML(g,book,R,s,view){
+  const n=book.length, lab=i=>`${i+1}${book[i].blank?'（白）':''}`;
+  const pgBox=i=>i===null?`<div class="pg ph">${pageDiv(g,book,R,-1,s,'px',true)}<div class="folio">&nbsp;</div></div>`
+    :`<div class="pg">${pageDiv(g,book,R,i,s,'px',true)}<div class="folio">${lab(i)}</div></div>`;
+  if(view==='spread') return spreadsOf(n).map(([l,r])=>`<div class="spread">${pgBox(l)}${pgBox(r)}</div>`).join('');
+  if(view==='impose') return sheetsOf(n).map(({i,side,pair:[l,r]})=>`<div class="sheet-wrap"><div class="sheet">${pageDiv(g,book,R,l,s,'px',true)}${pageDiv(g,book,R,r,s,'px',true)}</div><div class="folio">${i+1}枚目 ${side}（左 ${lab(l)} ｜ 右 ${lab(r)}）</div></div>`).join('');
+  return book.map((_,i)=>`<div class="pg">${pageDiv(g,book,R,i,s,'px',true)}<div class="folio">${lab(i)} / ${n}</div></div>`).join('');
 }
 function renderPrint(){
   render();
-  const {g,pages,R}=lastLayout;
-  $('pageRule').textContent=`@page{size:${g.W}mm ${g.H}mm;margin:0}`;
-  $('printArea').innerHTML=pagesHTML(g,pages,R,1,'mm',false);
+  const {g,book,R}=lastLayout;
+  if(g.copy&&state.printMode==='impose'){
+    $('pageRule').textContent=`@page{size:${2*g.W}mm ${g.H}mm;margin:0}`;
+    $('printArea').innerHTML=sheetsOf(book.length).map(({pair:[l,r]})=>`<div class="sheet" style="width:${2*g.W}mm;height:${g.H-0.3}mm">${pageDiv(g,book,R,l,1,'mm',false)}${pageDiv(g,book,R,r,1,'mm',false)}</div>`).join('');
+  }else{
+    $('pageRule').textContent=`@page{size:${g.W}mm ${g.H}mm;margin:0}`;
+    $('printArea').innerHTML=book.map((_,i)=>pageDiv(g,book,R,i,1,'mm',false)).join('');
+  }
 }
 window.addEventListener('beforeprint',renderPrint);
 
@@ -767,7 +930,12 @@ ta.addEventListener('input',e=>{ if(e.isComposing) {updateMeter(); return;} guar
 ta.addEventListener('compositionend',()=>{ guardLimit(); onText(); });
 
 form.addEventListener('input',e=>{
-  if(e.target.name==='size'){ state.size=e.target.value; $('margin').value=DEF_MARGIN[state.size]; }
+  if(e.target.name==='size'){
+    if(e.target.value==='copy'){ writeForm(); return; }
+    state.size=e.target.value; Object.assign(state,stdMargins(state.size)); writeForm();
+  }
+  if(e.target.name==='dir'){ const bv=e.target.value==='v'?'r':'l'; const bi=form.querySelector(`input[name="bind"][value="${bv}"]`); if(bi) bi.checked=true; }
+  if(/^m[TBNK]$/.test(e.target.id)&&e.target.value==='') return;
   if(e.target.id==='chars'||e.target.id==='lines'||e.target.id==='limit'){ if(e.target.value==='') return; }
   readForm(); persist(); updateMeter(); render();
 });
@@ -776,9 +944,53 @@ form.addEventListener('click',e=>{
   const b=e.target.closest('[data-step]');
   if(b){ const el=$(b.dataset.step); el.value=(parseFloat(el.value)||0)+parseInt(b.dataset.d,10); readForm(); writeForm(); persist(); render(); return; }
   const pr=e.target.closest('[data-preset]');
-  if(pr){ const P=PRESETS[pr.dataset.preset]; Object.keys(P).forEach(k=>{if(k!=='label') state[k]=P[k];}); writeForm(); persist(); render(); toast(P.label+' の設定にしました'); }
+  if(pr){ const P=PRESETS[pr.dataset.preset]; Object.keys(P).forEach(k=>{if(k!=='label') state[k]=P[k];}); if(!SIZES[state.size]) state.size='A6'; writeForm(); persist(); render(); toast(P.label+' の設定にしました'); }
 });
 $('btnPrint').addEventListener('click',()=>{renderPrint();setTimeout(()=>window.print(),50);});
+document.querySelector('.view-seg').addEventListener('click',e=>{const b=e.target.closest('[data-view]'); if(!b) return; state.view=b.dataset.view; persist(); render();});
+$('printMode').addEventListener('change',e=>{state.printMode=e.target.value; persist();});
+
+/* その他 → コピー本 dialog */
+const dlg=$('otherDlg');
+function openDlg(step){
+  $('dlgStep1').hidden=step!==1; $('dlgStep2').hidden=step!==2;
+  if(step===2) fillCopy();
+  if(!dlg.open){ try{dlg.showModal();}catch(e){dlg.setAttribute('open','');} }
+}
+function closeDlg(){ try{dlg.close();}catch(e){dlg.removeAttribute('open');} writeForm(); }
+function dlgVal(n){return (dlg.querySelector(`input[name="${n}"]:checked`)||{}).value;}
+function setDlgMargins(m){['T','B','N','K'].forEach(x=>$('c'+x).value=m['m'+x]);}
+function fillCopy(){
+  const sh=state.size==='copy'?state.copySheet:'A4';
+  dlg.querySelector(`input[name="cSheet"][value="${sh}"]`).checked=true;
+  dlg.querySelector(`input[name="cBind"][value="${state.bind}"]`).checked=true;
+  setDlgMargins(state.size==='copy'?state:stdMargins(FINISH[sh]));
+  $('cCover').checked=!!state.copyCover;
+  copySteps();
+}
+function copySteps(){
+  const sh=dlgVal('cSheet')||'A4';
+  $('cSteps').innerHTML=[
+    `「プレビュー」の「印刷・PDF保存」でPDFに保存します。${sh}横向きの用紙に2ページずつ並んだPDFになります。`,
+    `コンビニのネットプリントなどにPDFを登録し、用紙 ${sh}・両面・短辺とじ・等倍（拡大縮小なし）で印刷します。`,
+    `刷り上がった紙を順番どおりに重ね、まとめて半分に折ります。折り目の外側から中央をホチキスで2か所留めて完成です。`
+  ].map(t=>`<li>${t}</li>`).join('');
+}
+$('size-other').addEventListener('click',e=>{e.preventDefault(); openDlg(1);});
+$('catCopy').addEventListener('click',()=>openDlg(2));
+$('dlgBack').addEventListener('click',()=>openDlg(1));
+dlg.querySelectorAll('[data-dlg-close]').forEach(b=>b.addEventListener('click',closeDlg));
+dlg.addEventListener('cancel',()=>setTimeout(writeForm,0));
+dlg.addEventListener('change',e=>{ if(e.target.name==='cSheet'){ copySteps(); } });
+$('cStd').addEventListener('click',()=>setDlgMargins(stdMargins(FINISH[dlgVal('cSheet')||'A4'])));
+$('dlgApply').addEventListener('click',()=>{
+  state.size='copy'; state.orient='p'; state.copySheet=dlgVal('cSheet')||'A4'; state.bind=dlgVal('cBind')||state.bind;
+  ['T','B','N','K'].forEach(x=>{const z=parseFloat($('c'+x).value); if(!isNaN(z)) state['m'+x]=Math.max(0,Math.min(80,Math.round(z*2)/2));});
+  state.copyCover=$('cCover').checked;
+  closeDlg(); persist(); render();
+  toast(`コピー本（${state.copySheet}用紙 → ${FINISH[state.copySheet]}）にしました`);
+});
+
 $('zoom').addEventListener('input',e=>{state.zoom=parseInt(e.target.value,10);persist();render();});
 
 /* tabs */
