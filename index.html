@@ -196,7 +196,7 @@ dialog.dlg::backdrop{background:rgba(10,14,24,.5)}
 .page.grid.h .ln{background-image:repeating-linear-gradient(90deg,var(--grid) 0 1px,transparent 1px var(--cs)),linear-gradient(var(--band),var(--band));background-size:var(--L) var(--cs);background-position:left center}
 .ln ruby rt{font-size:.5em;line-height:1}
 .ln .em{text-emphasis:filled sesame;-webkit-text-emphasis:filled sesame}
-.ln .tcy{text-combine-upright:all;-webkit-text-combine:horizontal}
+.ln .tcy,.tb .tcy{text-combine-upright:all;-webkit-text-combine:horizontal}
 .ln .x{color:var(--over);background:var(--over-bg)}
 .tb{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:var(--tg)}
 .v .tb{writing-mode:vertical-rl}
@@ -393,7 +393,7 @@ dialog.dlg::backdrop{background:rgba(10,14,24,.5)}
       <fieldset class="group">
         <legend>組版オプション</legend>
         <div class="checks">
-          <label id="lab-tcy"><input type="checkbox" id="opt-tcy">2桁の数字・!? を縦中横にする（縦書き）</label>
+          <label id="lab-tcy"><input type="checkbox" id="opt-tcy">2桁の数字を縦中横にする（縦書き）</label>
           <label id="lab-fw"><input type="checkbox" id="opt-fw">半角英数を全角で組む（縦書き）</label>
           <label><input type="checkbox" id="opt-indent">段落の頭を自動で1字下げる</label>
           <label><input type="checkbox" id="opt-grid">マス目ガイドを表示</label>
@@ -614,7 +614,16 @@ const RE=new RegExp('《《([^》\\n]+)》》|[|｜]([^|｜《\\n]+?)《([^》\\
 const NOSTART=new Set([...'、。，．,.)）」』】〕〉》］｝!?！？']);
 const NOEND=new Set([...'（「『【〔〈《［｛(']);
 const isWS=c=>/[\s　]/.test(c);
+/* タイトル・作者名の「！？」を半角にし、縦書きでは縦中横にする */
+function bangs(h,v){
+  return h.replace(/[!?！？]+/g,m=>{
+    const t=m.replace(/！/g,'!').replace(/？/g,'?');
+    if(!v) return t;
+    let o=''; for(let q=0;q<t.length;q+=2) o+=`<span class="tcy">${t.slice(q,q+2)}</span>`; return o;
+  });
+}
 function toFull(c){
+  if(c==='!'||c==='?') return c;
   const code=c.charCodeAt(0);
   if(code===0x20) return '　';
   if(code>0x20&&code<0x7F) return String.fromCharCode(code+0xFEE0);
@@ -637,10 +646,18 @@ function buildUnits(text,o){
           if(/[0-9]/.test(c)&&/[0-9]/.test(cs[i+1]||'')&&!/[0-9]/.test(cs[i+2]||'')&&!/[0-9]/.test(prev)){
             run+=2; us.push({k:'y',t:c+cs[i+1],len:1,x:run>lim}); i++; continue;
           }
-          if(/[!?！？]/.test(c)&&/[!?！？]/.test(cs[i+1]||'')&&!/[!?！？]/.test(cs[i+2]||'')){
-            const h=(c+cs[i+1]).replace(/！/g,'!').replace(/？/g,'?');
-            run+=2; us.push({k:'y',t:h,len:1,x:run>lim}); i++; continue;
+        }
+        /* 「!?」「!!」などの2文字は、全角で入力されても常に半角で組む（縦書きは縦中横） */
+        /* 1文字の「!」「?」も半角で組む。3文字以上は2文字ずつに分ける */
+        if(/[!?！？]/.test(c)){
+          let j=i; while(j<cs.length&&/[!?！？]/.test(cs[j])) j++;
+          const h=cs.slice(i,j).join('').replace(/！/g,'!').replace(/？/g,'?');
+          for(let q=0;q<h.length;q+=2){
+            const t=h.slice(q,q+2);
+            if(o.v){ run+=t.length; us.push({k:'y',t,len:1,x:run>lim}); }
+            else for(const ch of t){ run++; us.push({k:'c',t:ch,len:1,x:run>lim}); }
           }
+          i=j-1; continue;
         }
         run+=weight(c);
         us.push({k:'c',t:(o.v&&o.fw)?toFull(c):c,len:1,x:run>lim&&weight(c)>0});
@@ -865,7 +882,7 @@ function titleHTML(g,R,f,s,u,lm){
     const lines=p==='t'?state.tText.replace(/\n+$/,'').split('\n').length:1;
     const ov=lines*mm(state[p+'Size'])*1.35>box+0.2;
     const txt=p==='t'?state.tText.replace(/\n+$/,''):state.aText.replace(/\n/g,' ');
-    return `<div class="${ov?'ov':''}" style="font-family:${fam};font-weight:${wt};font-size:${f(mm(state[p+'Size']))};text-align:${TALIGN[state[p+'Align']]};--ti:${f(state[p+'Ind']*g.cs)}">${esc(txt)}</div>`;
+    return `<div class="${ov?'ov':''}" style="font-family:${fam};font-weight:${wt};font-size:${f(mm(state[p+'Size']))};text-align:${TALIGN[state[p+'Align']]};--ti:${f(state[p+'Ind']*g.cs)}">${bangs(esc(txt),g.v)}</div>`;
   };
   return `<div class="tb" style="left:${f(x)};top:${f(y)};width:${f(w)};height:${f(h)};--tg:${f(g.cs)}">${part('t')}${part('a')}</div>`;
 }
