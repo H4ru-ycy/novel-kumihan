@@ -162,6 +162,7 @@ main.panes{flex:1;min-height:0;overflow:auto}
 .sheet .page{box-shadow:none}
 .sheet::after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed var(--grid)}
 .page.blank{display:flex;align-items:center;justify-content:center}
+.trim{position:absolute;outline:1px dashed var(--over);pointer-events:none;z-index:1}
 .view-seg{display:flex;gap:4px}
 .view-seg button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;font-size:.82rem;font-weight:700;cursor:pointer;color:var(--muted)}
 .view-seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
@@ -304,6 +305,10 @@ dialog.dlg::backdrop{background:rgba(10,14,24,.5)}
           <label><input type="radio" name="orient" id="orient-p" value="p"><span>縦長</span></label>
           <label><input type="radio" name="orient" id="orient-l" value="l"><span>横長</span></label>
         </div>
+        <div class="checks" style="margin-top:10px">
+          <label id="lab-bleed"><input type="checkbox" id="opt-bleed">塗り足しを適用（天地左右 3mm）</label>
+        </div>
+        <p class="hint" id="bleedHint"></p>
       </fieldset>
 
       <fieldset class="group">
@@ -560,7 +565,8 @@ const PRESETS={
   a5two:{label:'A5二段',size:'A5',orient:'p',dir:'v',cols:2,chars:25,lines:21,mT:14,mB:15,mN:14,mK:14,bind:'r'},
   contest:{label:'新人賞応募（A4横・縦書き40字×30行）',size:'A4',orient:'l',dir:'v',cols:1,chars:40,lines:30,mT:20,mB:21,mN:20,mK:20,bind:'r'}
 };
-const DEFAULTS={dir:'v',cols:1,size:'A6',orient:'p',chars:38,lines:16,mT:11,mB:12,mN:11,mK:11,bind:'r',copySheet:'A4',copyCover:false,view:'single',printMode:'impose',font:'mincho',tcy:true,fw:true,indent:false,grid:false,limit:10000,countMode:'nows',hard:false,zoom:100,
+const BLEED=3;
+const DEFAULTS={bleed:false,dir:'v',cols:1,size:'A6',orient:'p',chars:38,lines:16,mT:11,mB:12,mN:11,mK:11,bind:'r',copySheet:'A4',copyCover:false,view:'single',printMode:'impose',font:'mincho',tcy:true,fw:true,indent:false,grid:false,limit:10000,countMode:'nows',hard:false,zoom:100,
   tOn:true,tText:'灯の町',tSize:16,tFont:'bmincho',tAlign:'start',tInd:2,aOn:true,aText:'作者名',aSize:10,aFont:'mincho',aAlign:'end',aInd:2,tLines:4};
 
 const SAMPLE=`　第一章　｜雨夜《あまよ》
@@ -722,7 +728,8 @@ function geom(){
   let cs=L/(k*N+(k-1)*2); const p=C/M; let squeezed=false;
   if(p<cs*1.25){cs=p/1.25;squeezed=true;}
   const copy=state.size==='copy';
-  return {W,H,mT,mB,mN,mK,cW,cH,v,L,C,N,M,k,cs,p,squeezed,copy,shrunk:(mN+mK+mT+mB)<(state.mN+state.mK+state.mT+state.mB)-0.01};
+  const b=(state.bleed&&!copy)?BLEED:0;
+  return {W,H,b,mT,mB,mN,mK,cW,cH,v,L,C,N,M,k,cs,p,squeezed,copy,shrunk:(mN+mK+mT+mB)<(state.mN+state.mK+state.mT+state.mB)-0.01};
 }
 /* left margin of physical page index (0-based) */
 function leftM(g,idx){const n=idx+1; const isLeft=state.bind==='r'?(n%2===1):(n%2===0); return isLeft?g.mK:g.mN;}
@@ -736,6 +743,7 @@ function writeForm(){
   ['T','B','N','K'].forEach(x=>$('m'+x).value=state['m'+x]);
   const bi=form.querySelector(`input[name="bind"][value="${state.bind}"]`); if(bi) bi.checked=true;
   $('printMode').value=state.printMode;
+  $('opt-bleed').checked=state.bleed;
   $('opt-tcy').checked=state.tcy; $('opt-fw').checked=state.fw; $('opt-indent').checked=state.indent; $('opt-grid').checked=state.grid;
   $('limit').value=state.limit; $('countMode').value=state.countMode; $('opt-hard').checked=state.hard; $('zoom').value=state.zoom;
   ['t','a'].forEach(p=>{$(p+'On').checked=state[p+'On'];['Text','Size','Font','Align','Ind'].forEach(k=>$(p+k).value=state[p+k]);});
@@ -748,6 +756,7 @@ function readForm(){
   state.chars=clamp($('chars').value,5,80,state.chars); state.lines=clamp($('lines').value,3,60,state.lines);
   ['T','B','N','K'].forEach(x=>{const z=parseFloat($('m'+x).value); if(!isNaN(z)) state['m'+x]=Math.max(0,Math.min(80,Math.round(z*2)/2));});
   state.bind=r('bind')||state.bind;
+  state.bleed=$('opt-bleed').checked;
   state.tcy=$('opt-tcy').checked; state.fw=$('opt-fw').checked; state.indent=$('opt-indent').checked; state.grid=$('opt-grid').checked;
   state.limit=clamp($('limit').value,0,9999999,0); state.countMode=$('countMode').value; state.hard=$('opt-hard').checked;
   ['t','a'].forEach(p=>{
@@ -786,7 +795,11 @@ function render(){
   const g=geom();
   const dirL=g.v?'縦書き':'横書き', colL=g.k===2?'二段組み':'一段組み';
   const sizeL=g.copy?`コピー本 ${FINISH[state.copySheet]}（${state.copySheet}用紙）`:SIZE_LABEL[state.size]+(state.orient==='l'?'横長':'');
-  $('specLine').textContent=`${sizeL} · ${dirL} · ${state.bind==='r'?'右綴じ':'左綴じ'} · ${colL} · ${g.N}字×${g.M}行${g.k===2?'×2段':''}`;
+  $('specLine').textContent=`${sizeL}${g.b?'（塗り足し3mm）':''} · ${dirL} · ${state.bind==='r'?'右綴じ':'左綴じ'} · ${colL} · ${g.N}字×${g.M}行${g.k===2?'×2段':''}`;
+  $('lab-bleed').classList.toggle('is-off',g.copy); $('opt-bleed').disabled=g.copy;
+  $('bleedHint').textContent=g.copy?'コピー本では塗り足しは使いません。'
+    :g.b?`仕上がり ${+g.W.toFixed(1)}×${+g.H.toFixed(1)}mm → 塗り足し込み ${+(g.W+2*g.b).toFixed(1)}×${+(g.H+2*g.b).toFixed(1)}mm で出力します。プレビューの赤い点線が仕上がり線です。`
+    :'印刷所に入稿するときはオンにします。';
   $('otherSmall').textContent=g.copy?`コピー本 ${FINISH[state.copySheet]}`:'コピー本など';
   $('orientSeg').hidden=g.copy;
   $('mHint').textContent=`のど＝綴じる側です。${state.bind==='r'?'右綴じでは奇数ページの右側、偶数ページの左側':'左綴じでは奇数ページの左側、偶数ページの右側'}になります。`+(g.shrunk?' 余白が大きすぎるので、縮めて組んでいます。':'');
@@ -829,7 +842,7 @@ function render(){
   else lastWidth=pane.clientWidth;
   const view=curView();
   const baseW=(view==='single'?Math.min(avail,g.W>g.H?640:460):Math.min(avail/2,g.W>g.H?420:330))*state.zoom/100;
-  $('pages').innerHTML=screenHTML(g,book,R,baseW/g.W,view);
+  $('pages').innerHTML=screenHTML(g,book,R,baseW/(g.W+2*g.b),view);
   lastLayout={g,book,R};
 }
 function titleRows(g){
@@ -874,7 +887,7 @@ const TALIGN={start:'start',center:'center',end:'end'};
 function titleHTML(g,R,f,s,u,lm){
   const mm=ptv=>ptv*0.3527778;
   let x,y,w,h;
-  if(g.v){x=lm+g.cW-R*g.p;y=g.mT;w=R*g.p;h=g.cH;}else{x=lm;y=g.mT;w=g.cW;h=R*g.p;}
+  if(g.v){x=lm+g.cW-R*g.p;y=g.b+g.mT;w=R*g.p;h=g.cH;}else{x=lm;y=g.b+g.mT;w=g.cW;h=R*g.p;}
   const box=g.v?R*g.p:R*g.p;
   const part=(p,cls)=>{
     if(!state[p+'On']||!state[p+'Text'].trim()) return '';
@@ -890,18 +903,19 @@ let lastLayout=null;
 function pageDiv(g,book,R,idx,s,u,screen){
   const f=v=>(v*s).toFixed(3)+u;
   const colLen=g.N*g.cs, gap=2*g.cs, grid=screen&&state.grid;
-  const H=screen?g.H:g.H-0.3;
-  const style=`width:${f(g.W)};height:${f(H)};--cs:${f(g.cs)};--p:${f(g.p)};--L:${f(colLen)}`;
+  const b=g.b, H=screen?g.H+2*b:g.H+2*b-0.3;
+  const style=`width:${f(g.W+2*b)};height:${f(H)};--cs:${f(g.cs)};--p:${f(g.p)};--L:${f(colLen)}`;
+  const trim=(screen&&b&&idx>=0)?`<div class="trim" style="left:${f(b)};top:${f(b)};width:${f(g.W)};height:${f(g.H)}"></div>`:'';
   const pg=book[idx];
-  if(!pg||pg.blank) return `<div class="page blank" style="${style}"></div>`;
+  if(!pg||pg.blank) return `<div class="page blank" style="${style}">${trim}</div>`;
   const cls='page '+(g.v?'v':'h')+(state.font==='gothic'?' gothic':'')+(grid?' grid':'');
-  const lm=leftM(g,idx), out=[`<div class="${cls}" style="${style}">`];
+  const lm=b+leftM(g,idx), out=[`<div class="${cls}" style="${style}">`,trim];
   if(pg.first&&R) out.push(titleHTML(g,R,f,s,u,lm));
   pg.slots.forEach(({j,i,line})=>{
     if(line===undefined&&!grid) return;
     let x,y;
-    if(g.v){x=lm+g.cW-(i+1)*g.p; y=g.mT+j*(colLen+gap);}
-    else{x=lm+j*(colLen+gap); y=g.mT+i*g.p;}
+    if(g.v){x=lm+g.cW-(i+1)*g.p; y=b+g.mT+j*(colLen+gap);}
+    else{x=lm+j*(colLen+gap); y=b+g.mT+i*g.p;}
     out.push(`<div class="ln" style="left:${f(x)};top:${f(y)}">${line?line.map(unitHTML).join(''):''}</div>`);
   });
   out.push('</div>');
@@ -922,7 +936,7 @@ function renderPrint(){
     $('pageRule').textContent=`@page{size:${2*g.W}mm ${g.H}mm;margin:0}`;
     $('printArea').innerHTML=sheetsOf(book.length).map(({pair:[l,r]})=>`<div class="sheet" style="width:${2*g.W}mm;height:${g.H-0.3}mm">${pageDiv(g,book,R,l,1,'mm',false)}${pageDiv(g,book,R,r,1,'mm',false)}</div>`).join('');
   }else{
-    $('pageRule').textContent=`@page{size:${g.W}mm ${g.H}mm;margin:0}`;
+    $('pageRule').textContent=`@page{size:${g.W+2*g.b}mm ${g.H+2*g.b}mm;margin:0}`;
     $('printArea').innerHTML=book.map((_,i)=>pageDiv(g,book,R,i,1,'mm',false)).join('');
   }
 }
